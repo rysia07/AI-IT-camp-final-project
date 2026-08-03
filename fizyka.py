@@ -9,11 +9,13 @@ clock = pygame.time.Clock()
 running = True
 dt = 0
 
-# --- 1. WCZYTANIE TEKSTURY (Poza pętlą, tylko raz!) ---
+# Ukrywa systemowy kursor myszy
+pygame.mouse.set_visible(False)
+
+# --- 1. WCZYTANIE TEKSTURY ---
 try:
     obraz_oryginalny = pygame.image.load('kievinay-train-6558870_1920.png').convert_alpha()
 except pygame.error:
-    # Zastępcza tekstura, jeśli nie ma pliku tekstury
     obraz_oryginalny = pygame.Surface((50, 50))
     obraz_oryginalny.fill((139, 69, 19))  # Brązowy kolor
 
@@ -27,47 +29,36 @@ platforms = [
 ]
 
 # --- 3. SKALOWANIE TEKSTUR DO ROZMIARU PLATFORM ---
-# Tworzymy osobną, dopasowaną teksturę dla podłogi i osobną dla mniejszych platform
 tekstura_podlogi = pygame.transform.scale(obraz_oryginalny, floor.size)
-tekstura_platformy = pygame.transform.scale(obraz_oryginalny, platforms[1].size)
+tekstura_platformy = pygame.transform.scale(obraz_oryginalny, (200, 20))
 
-# --- GRACZ ---
-player_vel_y = 0  # Prędkość pionowa (0 = stoi w miejscu)
+# --- GRACZ 1 (Klawiatura - Czerwony) ---
+player_vel_y = 0
 player_size = 40
-jump_force = -1000  # Silniejsze wybicie w górę
-gravity = 2000  # Słabsze przyciąganie (dłuższy lot)
-is_grounded = False  # Czy gracz stoi na ziemi?
+jump_force = -1000
+gravity = 2000
+is_grounded = False
+player_pos = pygame.Vector2(1280 / 2 - 100, 720 / 2)
 
-# Pozycja startowa na środku ekranu
-player_pos = pygame.Vector2(okno.get_width() / 2, okno.get_height() / 2)
+# --- GRACZ 2 (Myszka - Niebieski) ---
+player2_size = 40  # Promień niebieskiej kropki
 
 while running:
-    # poll for events
+    # Pobieranie aktualnej pozycji myszki
+    mouse_x, mouse_y = pygame.mouse.get_pos()
+
+    # Obsługa zdarzeń wyjścia
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
 
-    # Czyszczenie ekranu kolorem tła
-    okno.fill((63, 94, 76))
-
-    # --- 4. RYSOWANIE TEKSTUR NA PLATFORMACH (Wewnątrz pętli gry!) ---
-    # Rysujemy podłogę
-    okno.blit(tekstura_podlogi, floor)
-
-    # Rysujemy pozostałe platformy (od indeksu 1 do końca listy)
-    for platforma in platforms[1:]:
-        okno.blit(tekstura_platformy, platforma)
-
-    # Rysowanie gracza (zmienione screen na okno)
-    pygame.draw.circle(okno, "red", player_pos, 40)
-
+    # --- INPUTY I FIZYKA GRACZA 1 (KLAWIATURA) ---
     keys = pygame.key.get_pressed()
-    # 1. AKTYWACJA SKOKU (Tylko jeśli gracz stoi na ziemi)
+
     if keys[pygame.K_w] and is_grounded:
         player_vel_y = jump_force
         is_grounded = False
 
-    # 2. ZASTOSOWANIE GRAWITACJI (Gdy gracz jest w powietrzu)
     if not is_grounded:
         if keys[pygame.K_s]:
             current_gravity = gravity * 3
@@ -75,30 +66,39 @@ while running:
             current_gravity = gravity
         player_vel_y += current_gravity * dt
 
-    # 3. AKTUALIZACJA POZYCJI Y
     player_pos.y += player_vel_y * dt
-
-    # --- KOLIZJE Z PLATFORMAMI ---
-    player_rect = pygame.Rect(player_pos.x - player_size // 2, player_pos.y - player_size // 2, player_size,
-                              player_size)
-    was_grounded_this_frame = False
-
-    for platform in platforms:
-        if player_rect.colliderect(platform) and player_vel_y >= 0:
-            if (player_pos.y + player_size // 2) - player_vel_y * dt <= platform.top + 10:
-                player_pos.y = platform.top - player_size // 2  # Postaw gracza na platformie
-                player_vel_y = 0
-                was_grounded_this_frame = True
-
-    is_grounded = was_grounded_this_frame
-
-    if not is_grounded and player_vel_y == 0:
-        is_grounded = False
 
     if keys[pygame.K_a]:
         player_pos.x -= 500 * dt
     if keys[pygame.K_d]:
         player_pos.x += 500 * dt
+
+    # --- KOLIZJE Z PLATFORMAMI (TYLKO GRACZ 1) ---
+    player_rect = pygame.Rect(player_pos.x - player_size, player_pos.y - player_size, player_size * 2, player_size * 2)
+    was_grounded_this_frame = False
+
+    for platform in platforms:
+        if player_rect.colliderect(platform) and player_vel_y >= 0:
+            if (player_pos.y + player_size) - player_vel_y * dt <= platform.top + 10:
+                player_pos.y = platform.top - player_size
+                player_vel_y = 0
+                was_grounded_this_frame = True
+
+    is_grounded = was_grounded_this_frame
+
+    # --- RYSOWANIE GRAFIKI ---
+    okno.fill((63, 94, 76))  # Tło
+
+    # Rysowanie platform z teksturami
+    okno.blit(tekstura_podlogi, floor)
+    for platforma in platforms[1:]:
+        okno.blit(tekstura_platformy, platforma)
+
+    # Rysowanie Gracza 1 (Czerwony)
+    pygame.draw.circle(okno, "red", (int(player_pos.x), int(player_pos.y)), player_size)
+
+    # Rysowanie Gracza 2 (Niebieski - przypisany bezpośrednio pod kursor myszy)
+    pygame.draw.circle(okno, "blue", (mouse_x, mouse_y), player2_size)
 
     # Odświeżenie ekranu
     pygame.display.flip()
