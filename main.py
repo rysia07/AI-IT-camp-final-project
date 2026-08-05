@@ -1,83 +1,94 @@
+# UPDATED main.py - INCREASE SPEED
 import sys
 import pygame
+from Characters import Creature, CharacterManager
 
-# Importujemy zdefiniowane przez Ciebie klasy
-from Characters import Creature, GhostMouse
-from ClickableBox import ClickableBox
-
-# 1. Inicjalizacja Pygame i okna
+# ============= INITIALIZATION =============
 pygame.init()
-WIDTH, HEIGHT = 1280, 720
-okno = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Nasza Gra w Pygame")
+WIDTH, HEIGHT = 900, 600
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Game - ludzik.png with Animations")
 clock = pygame.time.Clock()
 
-# Ukrywamy domyślny kursor myszy, bo gracz steruje duchem (GhostMouse)
-pygame.mouse.set_visible(False)
+# ============= CREATE PLAYER =============
+manager = CharacterManager()
 
-# 2. Przygotowanie platform (poziomu)
-floor = pygame.Rect(0, 650, 1280, 70)
+player = Creature(450, 300,10000, -1000, spritesheet_path='ludzik.png')
+
+player.movement_threshold = 0.1  # LOWER threshold for animation detection
+player.add_anim('idle', frames=[0], cols=3, rows=3,
+                priority=Creature.PRIORITY_IDLE)
+player.add_anim('walk', frames=[0, 1, 2, 3, 4, 5], cols=3, rows=3,
+                speed=150, priority=Creature.PRIORITY_WALK)
+player.add_anim('attack', frames=[6, 7, 8], cols=3, rows=3,
+                speed=300, loop=False, priority=Creature.PRIORITY_ATTACK)
+player.set_walk_idle('walk', 'idle')
+player.play('idle')
+manager.add('player', player)
+
+# ============= PLATFORMS =============
 platforms = [
-    floor,
-    pygame.Rect(300, 500, 200, 20),
-    pygame.Rect(600, 380, 200, 20),
-    pygame.Rect(900, 250, 200, 20)
+    pygame.Rect(50, 500, 800, 50),  # Ground
+    pygame.Rect(200, 400, 150, 50),  # Platform 1
+    pygame.Rect(550, 300, 150, 50),  # Platform 2
 ]
 
-# Ładowanie tekstur (z zabezpieczeniem try-except)
-try:
-    obraz_oryginalny = pygame.image.load('kievinay-train-6558870_1920.png').convert_alpha()
-except pygame.error:
-    obraz_oryginalny = pygame.Surface((50, 50))
-    obraz_oryginalny.fill((139, 69, 19))
-
-tekstura_podlogi = pygame.transform.scale(obraz_oryginalny, floor.size)
-tekstura_platformy = pygame.transform.scale(obraz_oryginalny, (200, 20))
-
-# 3. Tworzenie obiektów gry
-creature = Creature(x=WIDTH // 2 - 100, y=HEIGHT // 2)
-ghost = GhostMouse(x=0, y=0)
-
-box1 = ClickableBox(100, 100, 100, 100, (255, 0, 0), (255, 100, 100), (0, 255, 0))
-
-# Zmienne pomocnicze dla fizyki gracza (Creature)
-player_vel_y = 0
-jump_force = -1000
-gravity = 2000
-is_grounded = False
-
-# 4. Główna pętla gry
-dt = 0
+# ============= MAIN LOOP =============
 running = True
 
 while running:
-    # --- 1. OBSŁUGA ZDARZEŃ ---
+    dt = clock.tick(60) / 1000.0
+
+    # ========== INPUT HANDLING (ONLY IN MAIN) ==========
+    keys = pygame.key.get_pressed()
+
+    # Movement (A / D)
+    if keys[pygame.K_a]:
+        player.move(-player.speed * dt, 0)
+    if keys[pygame.K_d]:
+        player.move(player.speed * dt, 0)
+
+    # Jump (W key)
+    if keys[pygame.K_w]:
+        player.jump()
+
+    # Fast fall (S key)
+    player.apply_gravity(dt, fast_fall=keys[pygame.K_s])
+
+    # Events
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_2:
+                player.play('attack')
 
-        # Zdarzenia przekazujemy TYLKO do obiektów, które ich potrzebują
-        box1.handle_event(event)
+    # ========== UPDATE LOGIC ==========
+    manager.update_all(dt, platforms)
 
-    # --- 2. AKTUALIZACJA LOGIKI (POZA PĘTLĄ FOR!) ---
-    # To musi się wykonywać co klatkę, niezależnie od zdarzeń!
-    ghost.update()
-    creature.update(dt, platforms)
-    ghost.interact([box1])
+    # ========== RENDERING (ONLY IN MAIN) ==========
+    screen.fill((30, 30, 30))
 
-    # --- 3. RYSOWANIE ---
-    okno.fill((63, 94, 76))
+    # Draw platforms
+    for platform in platforms:
+        pygame.draw.rect(screen, (100, 200, 100), platform)
 
-    okno.blit(tekstura_podlogi, floor)
-    for platforma in platforms[1:]:
-        okno.blit(tekstura_platformy, platforma)
+    # Draw player
+    if player.sprite and player.sprite.current:
+        player.sprite.draw(screen)
+    else:
+        pygame.draw.circle(screen, "white", player.pos, player.size)
 
-    box1.draw(okno)
-    creature.draw(okno)
-    ghost.draw(okno)
+    # ========== UI INFO ==========
+    font = pygame.font.Font(None, 32)
+    text = font.render(f"Animation: {player.current_anim} | Grounded: {player.is_grounded}",
+                       True, (255, 255, 255))
+    screen.blit(text, (10, 10))
+
+    info = font.render("A/D=Move, W=Jump, S=Fast Fall, 2=Attack", True, (200, 200, 200))
+    screen.blit(info, (10, 50))
 
     pygame.display.flip()
-    dt = clock.tick(60) / 1000.0
 
 pygame.quit()
 sys.exit()
