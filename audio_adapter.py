@@ -11,7 +11,6 @@ class AudioState(Enum):
     PLAYING = 1
     PAUSED = 2
 
-
 @dataclass
 class FadeConfig:
     """Configuration for fade effects."""
@@ -77,13 +76,12 @@ class AudioAdapter:
         except pygame.error as e:
             raise RuntimeError(f"Failed to load audio file: {e}")
 
-    def play(self, loops: int = 0, start_pos: float = 0.0) -> None:
+    def play(self, loops: int = 0) -> None:
         """
         Play the loaded audio file.
 
         Args:
             loops: Number of loops (-1 for infinite)
-            start_pos: Starting position in seconds
         """
         if not self.current_sound:
             raise RuntimeError("No audio file loaded. Call load() first.")
@@ -194,13 +192,12 @@ class AudioAdapter:
         self.current_channel.set_volume(max(0.0, min(1.0, current_volume)))
 
         if progress >= 1.0:
-            self.current_volume = self.fade_config.target_volume
+            target_vol = self.fade_config.target_volume
+            self.current_volume = target_vol
             self.fade_config = None
 
-            if self.fade_config.target_volume == 0.0:
+            if target_vol == 0.0:
                 self.stop()
-                if self.on_end_callback:
-                    self.on_end_callback()
 
     def is_playing(self) -> bool:
         """Check if audio is currently playing."""
