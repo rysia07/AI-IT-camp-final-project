@@ -56,67 +56,27 @@ while running:
         if event.type == pygame.QUIT:
             running = False
 
-        # Przekazujemy zdarzenia do klikalnego przycisku
+        # Zdarzenia przekazujemy TYLKO do obiektów, które ich potrzebują
         box1.handle_event(event)
 
-    # --- 2. AKTUALIZACJA LOGIKI ---
-    # Ruch ducha podążającego za myszką
+    # --- 2. AKTUALIZACJA LOGIKI (POZA PĘTLĄ FOR!) ---
+    # To musi się wykonywać co klatkę, niezależnie od zdarzeń!
     ghost.update()
-
-    # Logika fizyki i skoku Creature (sterowanie klawiaturą)
-    keys = pygame.key.get_pressed()
-
-    if keys[pygame.K_w] and is_grounded:
-        player_vel_y = jump_force
-        is_grounded = False
-
-    current_gravity = gravity * 3 if (not is_grounded and keys[pygame.K_s]) else gravity
-    if not is_grounded:
-        player_vel_y += current_gravity * dt
-
-    creature.pos.y += player_vel_y * dt
-
-    if keys[pygame.K_a]:
-        creature.pos.x -= creature.speed * dt
-    if keys[pygame.K_d]:
-        creature.pos.x += creature.speed * dt
-
-    # Aktualizacja obszaru kolizji gracza
-    creature.update_rect()
-
-    # Kolizje z platformami
-    was_grounded_this_frame = False
-    for platform in platforms:
-        if creature.rect.colliderect(platform) and player_vel_y >= 0:
-            if (creature.pos.y + creature.size) - player_vel_y * dt <= platform.top + 10:
-                creature.pos.y = platform.top - creature.size
-                player_vel_y = 0
-                was_grounded_this_frame = True
-                creature.update_rect()
-
-    is_grounded = was_grounded_this_frame
-
-    # Interakcja ducha z obiektami w zasięgu
+    creature.update(dt, platforms)
     ghost.interact([box1])
 
     # --- 3. RYSOWANIE ---
-    okno.fill((63, 94, 76))  # Tło
+    okno.fill((63, 94, 76))
 
-    # Rysowanie platform
     okno.blit(tekstura_podlogi, floor)
     for platforma in platforms[1:]:
         okno.blit(tekstura_platformy, platforma)
 
-    # Rysowanie klikalnego pudełka
     box1.draw(okno)
-
-    # Rysowanie postaci
     creature.draw(okno)
     ghost.draw(okno)
 
     pygame.display.flip()
-
-    # Pobranie czasu delta w sekundach
     dt = clock.tick(60) / 1000.0
 
 pygame.quit()
