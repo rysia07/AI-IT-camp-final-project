@@ -5,6 +5,14 @@ import pygame
 from Characters import Creature, GhostMouse
 from Interactive import ClickableBox
 from Platforms import PlatformManager
+# Inicjalizacja gracza z plikiem graficznym
+WIDTH, HEIGHT = 1280, 720
+creature = Creature(x=WIDTH // 2, y=HEIGHT // 2, spritesheet_path='test2.png')
+
+# Dodanie animacji stojącej i chodzenia z arkusza sprajtów
+creature.add_animation('idle', cols=3, rows=3, frame_indices=[0], frame_duration=200)
+creature.add_animation('walk', cols=3, rows=3, frame_indices=[0, 1, 2, 3, 4, 5], frame_duration=150)
+creature.play('idle')
 
 # 1. Inicjalizacja Pygame i okna
 pygame.init()
@@ -26,7 +34,8 @@ box1 = ClickableBox(100, 100, 100, 100, (255, 0, 0), (255, 100, 100), (0, 255, 0
 # 3. Główna pętla gry
 dt = 0
 running = True
-
+dt_ms = int(dt * 1000)
+creature.draw(okno, dt_ms)
 while running:
     # --- 1. OBSŁUGA ZDARZEŃ ---
     for event in pygame.event.get():
