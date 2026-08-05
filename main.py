@@ -3,7 +3,7 @@ import pygame
 
 # Importujemy wszystkie klasy z naszych modułów
 from Characters import Creature, GhostMouse
-from ClickableBox import ClickableBox
+from Interactive import ClickableBox
 from Platforms import PlatformManager
 
 # 1. Inicjalizacja Pygame i okna

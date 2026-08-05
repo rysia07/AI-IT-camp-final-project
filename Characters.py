@@ -2,42 +2,44 @@ import pygame
 
 
 class Character:
-    def __init__(self, x, y, size, image=None):
+    def __init__(self, x, y, radius, color):
         self.pos = pygame.Vector2(x, y)
-        self.size = size
-        self.image = image
+        self.radius = radius
+        self.color = color
 
         self.rect = pygame.Rect(
-            x - size,
-            y - size,
-            size * 2,
-            size * 2
+            x - radius,
+            y - radius,
+            radius * 2,
+            radius * 2
         )
 
     def update_rect(self):
+        # Konwersja na int chroni przed ostrzeżeniami typów
         self.rect.center = (int(self.pos.x), int(self.pos.y))
 
+    def update(self, dt):
+        self.update_rect()
 
     def draw(self, surface):
-
-        if self.image:
-            surface.blit(self.image, self.rect)
-
-        else:
-            pygame.draw.circle(
-                surface,
-                "white",
-                self.pos,
-                self.size
-            )
+        pygame.draw.circle(
+            surface,
+            self.color,
+            (int(self.pos.x), int(self.pos.y)),
+            self.radius
+        )
 
 
 class Creature(Character):
     def __init__(self, x, y):
-        super().__init__(x, y, 40)
+        super().__init__(x, y, 40, "red")
+
+        # Statystyki gracza
+        self.hp = 100
+        self.power = 0  # 0 = jump, 1 = drop, 2 = double jump
 
         # Parametry ruchu i fizyki
-        self.speed = 500
+        self.speed = 400
         self.jump_force = -1000
         self.gravity = 2000
         self.vel_y = 0
@@ -71,8 +73,8 @@ class Creature(Character):
         was_grounded_this_frame = False
         for platform in platforms:
             if self.rect.colliderect(platform) and self.vel_y >= 0:
-                if (self.pos.y + self.size) - self.vel_y * dt <= platform.top + 10:
-                    self.pos.y = platform.top - self.size
+                if (self.pos.y + self.radius) - self.vel_y * dt <= platform.top + 10:
+                    self.pos.y = platform.top - self.radius
                     self.vel_y = 0
                     was_grounded_this_frame = True
                     self.update_rect()
@@ -81,27 +83,16 @@ class Creature(Character):
 
 
 class GhostMouse(Character):
-
-    def __init__(self, x, y):
-        super().__init__(x, y, 20)
-
-        self.interaction_range = 100
-
-
-    def update(self):
-
-        mouse_x, mouse_y = pygame.mouse.get_pos()
-
-        self.pos.x = mouse_x
-        self.pos.y = mouse_y
-
-        self.update_rect()
-
-
+    def __init__(self, x=0, y=0):
+        super().__init__(x, y, 20, "cyan")
+        self.hp = 50
 
     def interact(self, objects):
-
         for obj in objects:
-
             if self.rect.colliderect(obj.rect):
-                print()
+                print("Duch oddziałuje z obiektem")
+
+    def update(self, dt=0):
+        # Ruch podążający za pozycją myszy
+        self.pos = pygame.Vector2(pygame.mouse.get_pos())
+        super().update(dt)
