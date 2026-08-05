@@ -14,9 +14,8 @@ class Character:
             size * 2
         )
 
-
     def update_rect(self):
-        self.rect.center = self.pos
+        self.rect.center = (int(self.pos.x), int(self.pos.y))
 
 
     def draw(self, surface):
