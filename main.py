@@ -1,9 +1,10 @@
 import sys
 import pygame
 
-# Importujemy zdefiniowane przez Ciebie klasy
+# Importujemy wszystkie klasy z naszych modułów
 from Characters import Creature, GhostMouse
 from ClickableBox import ClickableBox
+from Platforms import PlatformManager
 
 # 1. Inicjalizacja Pygame i okna
 pygame.init()
@@ -12,41 +13,17 @@ okno = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Nasza Gra w Pygame")
 clock = pygame.time.Clock()
 
-# Ukrywamy domyślny kursor myszy, bo gracz steruje duchem (GhostMouse)
+# Ukrywamy kursor myszy (gracz steruje duchem)
 pygame.mouse.set_visible(False)
 
-# 2. Przygotowanie platform (poziomu)
-floor = pygame.Rect(0, 650, 1280, 70)
-platforms = [
-    floor,
-    pygame.Rect(300, 500, 200, 20),
-    pygame.Rect(600, 380, 200, 20),
-    pygame.Rect(900, 250, 200, 20)
-]
-
-# Ładowanie tekstur (z zabezpieczeniem try-except)
-try:
-    obraz_oryginalny = pygame.image.load('kievinay-train-6558870_1920.png').convert_alpha()
-except pygame.error:
-    obraz_oryginalny = pygame.Surface((50, 50))
-    obraz_oryginalny.fill((139, 69, 19))
-
-tekstura_podlogi = pygame.transform.scale(obraz_oryginalny, floor.size)
-tekstura_platformy = pygame.transform.scale(obraz_oryginalny, (200, 20))
-
-# 3. Tworzenie obiektów gry
+# 2. Tworzenie obiektów gry
+level = PlatformManager('kievinay-train-6558870_1920.png')
 creature = Creature(x=WIDTH // 2 - 100, y=HEIGHT // 2)
 ghost = GhostMouse(x=0, y=0)
 
 box1 = ClickableBox(100, 100, 100, 100, (255, 0, 0), (255, 100, 100), (0, 255, 0))
 
-# Zmienne pomocnicze dla fizyki gracza (Creature)
-player_vel_y = 0
-jump_force = -1000
-gravity = 2000
-is_grounded = False
-
-# 4. Główna pętla gry
+# 3. Główna pętla gry
 dt = 0
 running = True
 
@@ -56,67 +33,27 @@ while running:
         if event.type == pygame.QUIT:
             running = False
 
-        # Przekazujemy zdarzenia do klikalnego przycisku
+        # Zdarzenia trafiają do obiektów interaktywnych
         box1.handle_event(event)
 
-    # --- 2. AKTUALIZACJA LOGIKI ---
-    # Ruch ducha podążającego za myszką
+    # --- 2. AKTUALIZACJA LOGIKI (poza pętlą zdarzeń!) ---
     ghost.update()
-
-    # Logika fizyki i skoku Creature (sterowanie klawiaturą)
-    keys = pygame.key.get_pressed()
-
-    if keys[pygame.K_w] and is_grounded:
-        player_vel_y = jump_force
-        is_grounded = False
-
-    current_gravity = gravity * 3 if (not is_grounded and keys[pygame.K_s]) else gravity
-    if not is_grounded:
-        player_vel_y += current_gravity * dt
-
-    creature.pos.y += player_vel_y * dt
-
-    if keys[pygame.K_a]:
-        creature.pos.x -= creature.speed * dt
-    if keys[pygame.K_d]:
-        creature.pos.x += creature.speed * dt
-
-    # Aktualizacja obszaru kolizji gracza
-    creature.update_rect()
-
-    # Kolizje z platformami
-    was_grounded_this_frame = False
-    for platform in platforms:
-        if creature.rect.colliderect(platform) and player_vel_y >= 0:
-            if (creature.pos.y + creature.size) - player_vel_y * dt <= platform.top + 10:
-                creature.pos.y = platform.top - creature.size
-                player_vel_y = 0
-                was_grounded_this_frame = True
-                creature.update_rect()
-
-    is_grounded = was_grounded_this_frame
-
-    # Interakcja ducha z obiektami w zasięgu
+    # Przekazujemy listę platform bezpośrednio z obiektu level:
+    creature.update(dt, level.platforms)
     ghost.interact([box1])
 
     # --- 3. RYSOWANIE ---
     okno.fill((63, 94, 76))  # Tło
 
-    # Rysowanie platform
-    okno.blit(tekstura_podlogi, floor)
-    for platforma in platforms[1:]:
-        okno.blit(tekstura_platformy, platforma)
+    # Rysujemy poziom za pomocą jednej linijki!
+    level.draw(okno)
 
-    # Rysowanie klikalnego pudełka
+    # Rysujemy pozostałe obiekty
     box1.draw(okno)
-
-    # Rysowanie postaci
     creature.draw(okno)
     ghost.draw(okno)
 
     pygame.display.flip()
-
-    # Pobranie czasu delta w sekundach
     dt = clock.tick(60) / 1000.0
 
 pygame.quit()
