@@ -58,8 +58,7 @@ class Creature(Character):
 
 
     def attack(self):
-        print("Atak!")
-
+        print()
 
 
 class GhostMouse(Character):
@@ -86,4 +85,4 @@ class GhostMouse(Character):
         for obj in objects:
 
             if self.rect.colliderect(obj.rect):
-                print("Duch oddziałuje z obiektem")
+                print()
