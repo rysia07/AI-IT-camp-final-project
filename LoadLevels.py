@@ -94,7 +94,7 @@ def load_rects_from_file(filepath: str) -> RectManager:
                 if not line.startswith('p'):
                     continue
                 else:
-
+                    pass
 
                 # Split by space or comma
                     parts = line.replace(',', ' ').split()
