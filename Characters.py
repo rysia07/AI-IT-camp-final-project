@@ -25,7 +25,7 @@ class Character:
         self.last_pos = pygame.Vector2(x, y)
         self.size = size
         self.image = image
-        self.rect = pygame.Rect(x - size, y - size, size * 2, size * 2)
+        self.rect = pygame.Rect(x, y, size * 2, size * 4)
 
         self.sprite = None
         if spritesheet_path:
@@ -146,7 +146,7 @@ class Character:
         if self.sprite and not self.is_paused:
             self.sprite.update(dt)
             self.sprite.set_position(int(self.pos.x - self.size),
-                                    int(self.pos.y - self.size))
+                                     int(self.pos.y - self.size))
 
         self._clear_priority_if_done()
         self._check_movement()
@@ -164,8 +164,8 @@ class Character:
 
 class Creature(Character):
     """Character with physics (gravity, jumping, platforms)."""
-    
-    def __init__(self, x: float, y: float, speed: float = 2000,jump_force: float = -1000,
+
+    def __init__(self, x: float, y: float, speed: float = 2000, jump_force: float = -1000,
                  spritesheet_path: Optional[str] = None):
         """Initialize creature with physics."""
         super().__init__(x, y, 40, spritesheet_path=spritesheet_path)
@@ -181,7 +181,7 @@ class Creature(Character):
     def move(self, dx: float, dy: float = 0) -> None:
         """Move creature (input from main.py)."""
         self.velocity.x = dx
-        
+
     def jump(self) -> None:
         """Jump (input from main.py)."""
         if self.is_grounded:
@@ -199,7 +199,7 @@ class Creature(Character):
         # Apply horizontal movement
         self.pos.x += self.velocity.x * dt
         self.velocity.x = 0
-        
+
         # Apply vertical movement
         self.pos.y += self.vel_y * dt
 
@@ -210,13 +210,13 @@ class Creature(Character):
         for platform in platforms:
             if self.rect.colliderect(platform):
                 # Only collide if falling (vel_y >= 0)
-                if self.vel_y >= 0:
+
                     # Check if we're above the platform
-                    if self.pos.y < platform.centery:
-                        self.pos.y = platform.top - self.size
-                        self.vel_y = 0
-                        self.is_grounded = True
-                        break
+
+                self.pos.y = platform.top - self.size +1
+                self.vel_y = 0
+                self.is_grounded = True
+                break
 
         self.update_rect()
 

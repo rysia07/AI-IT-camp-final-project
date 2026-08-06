@@ -10,7 +10,7 @@ class PlatformManager:
             self.raw_image.fill((139, 69, 19))
 
         # Definicja podłogi i platform
-        self.floor = pygame.Rect(0, 650, 1280, 70)
+        self.floor = pygame.Rect(0, 550, 900, 50)
         self.platforms = [
             self.floor,
             pygame.Rect(300, 500, 200, 20),

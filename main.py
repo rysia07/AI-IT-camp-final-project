@@ -1,94 +1,292 @@
-# UPDATED main.py - INCREASE SPEED
 import sys
 import pygame
-from Characters import Creature, CharacterManager
 
-# ============= INITIALIZATION =============
+from Characters import Creature, CharacterManager, GhostMouse
+from Platforms import PlatformManager
+
+
+# =====================================================
+# INITIALIZATION
+# =====================================================
+
 pygame.init()
-WIDTH, HEIGHT = 900, 600
+
+WIDTH = 900
+HEIGHT = 600
+
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Game - ludzik.png with Animations")
+pygame.display.set_caption("Coop Game")
+
 clock = pygame.time.Clock()
 
-# ============= CREATE PLAYER =============
+
+# =====================================================
+# WORLD
+# =====================================================
+
+platform_manager = PlatformManager(
+    "kievinay-train-6558870_1920.png"
+)
+
+
+# =====================================================
+# CHARACTERS
+# =====================================================
+
 manager = CharacterManager()
 
-player = Creature(450, 300,10000, -1000, spritesheet_path='ludzik.png')
 
-player.movement_threshold = 0.1  # LOWER threshold for animation detection
-player.add_anim('idle', frames=[0], cols=3, rows=3,
-                priority=Creature.PRIORITY_IDLE)
-player.add_anim('walk', frames=[0, 1, 2, 3, 4, 5], cols=3, rows=3,
-                speed=150, priority=Creature.PRIORITY_WALK)
-player.add_anim('attack', frames=[6, 7, 8], cols=3, rows=3,
-                speed=300, loop=False, priority=Creature.PRIORITY_ATTACK)
-player.set_walk_idle('walk', 'idle')
-player.play('idle')
-manager.add('player', player)
+player = Creature(
+    450,
+    600,
+    speed=300,
+    jump_force=-700,
+    spritesheet_path="ludzik.png"
+)
 
-# ============= PLATFORMS =============
-platforms = [
-    pygame.Rect(50, 500, 800, 50),  # Ground
-    pygame.Rect(200, 400, 150, 50),  # Platform 1
-    pygame.Rect(550, 300, 150, 50),  # Platform 2
-]
 
-# ============= MAIN LOOP =============
+# Animacje gracza
+
+player.movement_threshold = 0.1
+
+player.add_anim(
+    "idle",
+    frames=[0],
+    cols=3,
+    rows=3,
+    priority=Creature.PRIORITY_IDLE
+)
+
+
+player.add_anim(
+    "walk",
+    frames=[0, 1, 2, 3, 4, 5],
+    cols=3,
+    rows=3,
+    speed=150,
+    priority=Creature.PRIORITY_WALK
+)
+
+
+player.add_anim(
+    "attack",
+    frames=[6, 7, 8],
+    cols=3,
+    rows=3,
+    speed=300,
+    loop=False,
+    priority=Creature.PRIORITY_ATTACK
+)
+
+
+player.set_walk_idle(
+    "walk",
+    "idle"
+)
+
+
+player.play("idle")
+
+
+manager.add(
+    "player",
+    player
+)
+
+
+
+# Duch (na razie opcjonalnie)
+
+# ghost = GhostMouse(
+#     100,
+#     100,
+#     "ghost.png"
+# )
+#
+# manager.add(
+#     "ghost",
+#     ghost
+# )
+
+
+# =====================================================
+# MAIN LOOP
+# =====================================================
+
 running = True
 
+
 while running:
-    dt = clock.tick(60) / 1000.0
 
-    # ========== INPUT HANDLING (ONLY IN MAIN) ==========
-    keys = pygame.key.get_pressed()
+    dt = clock.tick(60) / 1000
 
-    # Movement (A / D)
-    if keys[pygame.K_a]:
-        player.move(-player.speed * dt, 0)
-    if keys[pygame.K_d]:
-        player.move(player.speed * dt, 0)
 
-    # Jump (W key)
-    if keys[pygame.K_w]:
-        player.jump()
+    # =================================================
+    # EVENTS
+    # =================================================
 
-    # Fast fall (S key)
-    player.apply_gravity(dt, fast_fall=keys[pygame.K_s])
-
-    # Events
     for event in pygame.event.get():
+
         if event.type == pygame.QUIT:
             running = False
-        elif event.type == pygame.KEYDOWN:
+
+
+        if event.type == pygame.KEYDOWN:
+
+            if event.key == pygame.K_w:
+                player.jump()
+
+
             if event.key == pygame.K_2:
-                player.play('attack')
+                player.play("attack")
 
-    # ========== UPDATE LOGIC ==========
-    manager.update_all(dt, platforms)
 
-    # ========== RENDERING (ONLY IN MAIN) ==========
-    screen.fill((30, 30, 30))
 
-    # Draw platforms
-    for platform in platforms:
-        pygame.draw.rect(screen, (100, 200, 100), platform)
+    # =================================================
+    # INPUT
+    # =================================================
 
-    # Draw player
+    keys = pygame.key.get_pressed()
+
+
+    direction = 0
+
+
+    if keys[pygame.K_a]:
+        direction -= 1
+
+
+    if keys[pygame.K_d]:
+        direction += 1
+
+
+    player.move(
+        direction * player.speed
+    )
+
+
+    player.apply_gravity(
+        dt,
+        fast_fall=keys[pygame.K_s]
+    )
+
+
+
+    # =================================================
+    # UPDATE
+    # =================================================
+
+    manager.update_all(
+        dt,
+        platform_manager.platforms
+    )
+
+
+
+    # =================================================
+    # DRAW
+    # =================================================
+
+    screen.fill(
+        (30, 30, 30)
+    )
+
+
+    # platformy
+
+    platform_manager.draw(
+        screen
+    )
+
+
+    # DEBUG HITBOXY
+
+    for rect in platform_manager.platforms:
+
+        pygame.draw.rect(
+            screen,
+            (0, 0, 255),
+            rect,
+            2
+        )
+
+
+    pygame.draw.rect(
+        screen,
+        (255, 0, 0),
+        player.rect,
+        2
+    )
+    pygame.draw.circle(
+        screen,
+        (0, 255, 0),
+        player.pos,
+        5
+    )
+
+
+    # gracz
+
     if player.sprite and player.sprite.current:
-        player.sprite.draw(screen)
+
+        player.sprite.draw(
+            screen
+        )
+
     else:
-        pygame.draw.circle(screen, "white", player.pos, player.size)
 
-    # ========== UI INFO ==========
-    font = pygame.font.Font(None, 32)
-    text = font.render(f"Animation: {player.current_anim} | Grounded: {player.is_grounded}",
-                       True, (255, 255, 255))
-    screen.blit(text, (10, 10))
+        pygame.draw.circle(
+            screen,
+            "white",
+            player.pos,
+            player.size
+        )
 
-    info = font.render("A/D=Move, W=Jump, S=Fast Fall, 2=Attack", True, (200, 200, 200))
-    screen.blit(info, (10, 50))
+
+
+    # =================================================
+    # UI
+    # =================================================
+
+    font = pygame.font.Font(
+        None,
+        32
+    )
+
+
+    info = font.render(
+        f"Anim: {player.current_anim} | Grounded: {player.is_grounded}",
+        True,
+        (255,255,255)
+    )
+
+
+    screen.blit(
+        info,
+        (10,10)
+    )
+
+
+    controls = font.render(
+        "A/D ruch | W skok | S szybki spadek | 2 atak",
+        True,
+        (200,200,200)
+    )
+
+
+    screen.blit(
+        controls,
+        (10,50)
+    )
+
 
     pygame.display.flip()
+
+
+
+# =====================================================
+# EXIT
+# =====================================================
 
 pygame.quit()
 sys.exit()
