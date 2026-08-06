@@ -4,9 +4,9 @@ import random
 from typing import List, Dict, Tuple, Optional
 
 
-global player_pos
-player_pos = (0,0)
 
+
+player_pos = (0,0)
 
 class RectObject:
     """Represents a drawable rectangle."""
@@ -123,7 +123,7 @@ def load_rects_from_file(filepath: str) -> RectManager:
                         rect_obj = RectObject(x, y, width, height, name=name)
                         manager.add(rect_obj)
                     else:
-                        player_pos = (float(parts[0]), float(parts[1]))
+                        _player_pos = (float(parts[0]), float(parts[1]))
                 except (ValueError, IndexError) as e:
                     print(f"⚠️ Line {line_num}: {line} - Error: {e}")
                     continue
