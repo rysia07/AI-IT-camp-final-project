@@ -13,15 +13,15 @@ clock = pygame.time.Clock()
 # ============= CREATE PLAYER =============
 manager = CharacterManager()
 
-player = Creature(450, 300,10000, -1000, spritesheet_path='ludzik.png')
+player = Creature(150, 300,10000, -1000, spritesheet_path='enemy.png')
 
 player.movement_threshold = 0.1  # LOWER threshold for animation detection
 player.add_anim('idle', frames=[0], cols=3, rows=3,
                 priority=Creature.PRIORITY_IDLE)
-player.add_anim('walk', frames=[0, 1, 2, 3, 4, 5], cols=3, rows=3,
+player.add_anim('walk', frames=[0], cols=3, rows=3,
                 speed=150, priority=Creature.PRIORITY_WALK)
-player.add_anim('attack', frames=[6, 7, 8], cols=3, rows=3,
-                speed=300, loop=False, priority=Creature.PRIORITY_ATTACK)
+player.add_anim('attack', frames=[0,1,2,3,4,5,6], cols=3, rows=3,
+                speed=50, loop=False, priority=Creature.PRIORITY_ATTACK)
 player.set_walk_idle('walk', 'idle')
 player.play('idle')
 manager.add('player', player)
