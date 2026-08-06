@@ -2,7 +2,7 @@
 import sys
 import pygame
 from Characters import Creature, CharacterManager
-
+from GUI import Button, MainMenu
 # ============= INITIALIZATION =============
 pygame.init()
 WIDTH, HEIGHT = 900, 600
@@ -39,7 +39,28 @@ running = True
 while running:
     dt = clock.tick(60) / 1000.0
 
-    # ========== INPUT HANDLING (ONLY IN MAIN) ==========
+    # Get mouse info
+    mouse_pos = pygame.mouse.get_pos()
+    mouse_pressed = pygame.mouse.get_presses()
+
+    # Events
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+
+    # UPDATE based on state
+    if current_state == MENU:
+        menu.update(mouse_pos)
+        clicked_button = menu.handle_click(mouse_pos, mouse_pressed)
+        if clicked_button == 'play':
+            current_state = PLAYING
+        elif clicked_button == 'quit':
+            running = False
+        # TODO: add 'options' and 'credits' functionality later
+
+    elif current_state == PLAYING:
+
+        # ========== INPUT HANDLING (ONLY IN MAIN) ==========
     keys = pygame.key.get_pressed()
 
     # Movement (A / D)
