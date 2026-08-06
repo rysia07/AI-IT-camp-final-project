@@ -183,17 +183,20 @@ class Creature(Character):
     def update(self, dt, platforms):
         keys = pygame.key.get_pressed()
 
-        # 1. Ruch w lewo / prawo + obsługa animacji
+        # ==========================================
+        # 1. RUCH POZIOMY (Oś X)
+        # ==========================================
         moving = False
+        dx = 0
+
         if keys[pygame.K_a]:
-            self.pos.x -= self.speed * dt
+            dx -= self.speed * dt
             moving = True
-
         if keys[pygame.K_d]:
-            self.pos.x += self.speed * dt
+            dx += self.speed * dt
             moving = True
 
-        # Przełączanie animacji na podstawie ruchu
+        # Animacje
         if moving:
             if self.walk_anim:
                 self.play(self.walk_anim, reset=False)
@@ -201,34 +204,48 @@ class Creature(Character):
             if self.idle_anim:
                 self.play(self.idle_anim, reset=False)
 
-        # 2. Skok (klawisz W)
-        if keys[pygame.K_w] and self.is_grounded:
-            self.vel_y = self.jump_force
-            self.is_grounded = False
-
-        # 3. Grawitacja i opadanie (klawisz S)
-        current_gravity = self.gravity * 3 if (not self.is_grounded and keys[pygame.K_s]) else self.gravity
-        if not self.is_grounded:
-            self.vel_y += current_gravity * dt
-
-        self.pos.y += self.vel_y * dt
-
-        # Aktualizacja pozycji hitboksu
+        # Aktualizacja pozycji X i kolizji bocznych
+        self.pos.x += dx
         self.update_rect()
 
-        # 4. Kolizje z platformami
-        was_grounded_this_frame = False
         for platform in platforms:
-            if self.rect.colliderect(platform) and self.vel_y >= 0:
-                if (self.pos.y + self.size) - self.vel_y * dt <= platform.top + 10:
-                    self.pos.y = platform.top - self.size
+            if self.rect.colliderect(platform):
+                if dx > 0:  # Ruch w prawo -> uderzenie w lewą ściankę platformy
+                    self.rect.right = platform.left
+                elif dx < 0:  # Ruch w lewo -> uderzenie w prawą ściankę platformy
+                    self.rect.left = platform.right
+                self.pos.x = self.rect.centerx
+
+        # ==========================================
+        # 2. RUCH PIONOWY (Oś Y - Grawitacja i Skok)
+        # ==========================================
+        if keys[pygame.K_w] and self.is_grounded:
+            self.jump()
+
+        current_gravity = self.gravity * 3 if (not self.is_grounded and keys[pygame.K_s]) else self.gravity
+        self.vel_y += current_gravity * dt
+
+        self.pos.y += self.vel_y * dt
+        self.update_rect()
+
+        # Kolizje pionowe (Lądowanie i Uderzenie Głową od dołu)
+        self.is_grounded = False
+
+        for platform in platforms:
+            if self.rect.colliderect(platform):
+                if self.vel_y > 0:
+                    # Opadanie -> LĄDOWANIE NA PLATFORMIE
+                    self.rect.bottom = platform.top
                     self.vel_y = 0
-                    was_grounded_this_frame = True
-                    self.update_rect()
+                    self.is_grounded = True
+                elif self.vel_y < 0:
+                    # Skok w górę -> UDERZENIE GŁOWĄ OD DOŁU
+                    self.rect.top = platform.bottom
+                    self.vel_y = 0  # Zatrzymujemy ruch w górę (postać zaczyna spadać)
 
-        self.is_grounded = was_grounded_this_frame
+                self.pos.y = self.rect.centery
 
-        # Wywołanie update z klasy bazowej dla animacji
+        # Aktualizacja animacji (przekazanie ms)
         super().update(int(dt * 1000))
 
 
