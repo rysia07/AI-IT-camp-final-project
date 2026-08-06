@@ -103,7 +103,7 @@ def load_rects_from_file(filepath: str) -> RectManager:
 
 
                 # Split by space or comma
-                parts = line.replace(',', ' ').split()
+                    parts = line.replace(',', ' ').split()
 
                 if len(parts) < 4:
                     print(f"⚠️ Line {line_num}: Invalid format (need at least x y width height)")
