@@ -170,7 +170,6 @@ class SpriteObject:
         return None
 
     def draw(self, surface):
-
         if self.current and self.current in self.animations:
             anim = self.animations[self.current]
 
@@ -178,9 +177,16 @@ class SpriteObject:
                 anim.frames[anim.current].rect
             )
 
+            # TUTAJ REGULUJESZ PRZESUNIĘCIE GRAFIKI WGLĘDEM HITBOXU:
+            # - Pierwsza liczba (X): zmniejsz (np. do -100 lub -120), aby przesunąć postać W LEWO.
+            # - Druga liczba (Y): zmniejsz (np. do -160 lub -180), aby podnieść postać W GÓRĘ.
+
+            offset_x = -105 # <--- dostosuj, aż zielona kropka będzie na klatce piersiowej
+            offset_y = -135  # <--- dostosuj, aż stopy będą dokładnie na dole czerwonej ramki
+
             surface.blit(
                 img,
-                (self.position[0] - 64, self.position[1] - 128)
+                (self.position[0] + offset_x, self.position[1] + offset_y)
             )
 
     def set_position(self, x: int, y: int):
