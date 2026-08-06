@@ -1,209 +1,278 @@
 import pygame
-from dataclasses import dataclass
-from typing import List, Optional, Dict
+from typing import Optional, List, Dict
+from animations import SpriteObject
 
 
-# ==========================================
-# 1. SYSTEM ANIMACJI (z animations.py)
-# ==========================================
+class Character:
+    """
+    Character class with animation hierarchy support.
 
-@dataclass
-class Frame:
-    rect: pygame.Rect
-    duration: int  # ms
+    Priority levels (higher = can't be interrupted):
+    - PRIORITY_IDLE = 1
+    - PRIORITY_WALK = 1
+    - PRIORITY_ATTACK = 3
+    """
 
+    PRIORITY_IDLE = 1
+    PRIORITY_WALK = 1
+    PRIORITY_ATTACK = 3
 
-class Spritesheet:
-    def __init__(self, filepath: str):
-        self.filepath = filepath
-        self.image = pygame.image.load(filepath).convert_alpha()
-        self.rect = self.image.get_rect()
-
-    def get_frame(self, rect: pygame.Rect) -> pygame.Surface:
-        surf = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
-        surf.blit(self.image, (0, 0), rect)
-        return surf
-
-    def create_grid_frames(self, cols: int, rows: int, total_frames: Optional[int] = None,
-                           duration: int = 100, start_x: int = 0, start_y: int = 0,
-                           x_spacing: int = 0, y_spacing: int = 0) -> List[Frame]:
-        frames: List[Frame] = []
-        if cols <= 0 or rows <= 0:
-            return frames
-        usable_w = self.rect.width - start_x
-        usable_h = self.rect.height - start_y
-        frame_w = usable_w // cols
-        frame_h = usable_h // rows
-        max_frames = cols * rows
-        take = max_frames if total_frames is None else min(total_frames, max_frames)
-        count = 0
-        for r in range(rows):
-            for c in range(cols):
-                if count >= take:
-                    break
-                x = start_x + c * (frame_w + x_spacing)
-                y = start_y + r * (frame_h + y_spacing)
-                frames.append(Frame(pygame.Rect(x, y, frame_w, frame_h), duration))
-                count += 1
-            if count >= take:
-                break
-        return frames
-
-
-class Animation:
-    def __init__(self, spritesheet: Spritesheet, frames: List[Frame], loop: bool = True):
-        self.spritesheet = spritesheet
-        self.frames = frames
-        self.loop = loop
-        self.current = 0
-        self.elapsed = 0
-        self._finished = False
-
-    def update(self, dt_ms: int) -> Optional[pygame.Surface]:
-        if not self.frames:
-            return None
-        if self._finished:
-            return self.spritesheet.get_frame(self.frames[-1].rect)
-        self.elapsed += dt_ms
-        dur = self.frames[self.current].duration
-        if self.elapsed >= dur:
-            self.elapsed -= dur
-            self.current += 1
-            if self.current >= len(self.frames):
-                if self.loop:
-                    self.current = 0
-                else:
-                    self.current = len(self.frames) - 1
-                    self._finished = True
-        return self.spritesheet.get_frame(self.frames[self.current].rect)
-
-    def reset(self):
-        self.current = 0
-        self.elapsed = 0
-        self._finished = False
-
-
-# ==========================================
-# 2. BAZOWA KLASA POSTACI ZE SPRITEM
-# ==========================================
-
-class AnimatedCharacter:
-    def __init__(self, x: float, y: float, spritesheet_path: Optional[str] = None):
+    def __init__(self, x: float, y: float, size: float,
+                 image: Optional[pygame.Surface] = None,
+                 spritesheet_path: Optional[str] = None):
+        """Initialize character."""
         self.pos = pygame.Vector2(x, y)
-        self.animations: Dict[str, Animation] = {}
+        self.last_pos = pygame.Vector2(x, y)
+        self.size = size
+        self.image = image
+        self.rect = pygame.Rect(x - size, y - size, size * 2, size * 2)
+
+        self.sprite = None
+        if spritesheet_path:
+            self.sprite = SpriteObject('char', spritesheet_path, int(x), int(y))
+
         self.current_anim: Optional[str] = None
-        self.spritesheet = Spritesheet(spritesheet_path) if spritesheet_path else None
-        self.rect = pygame.Rect(x - 20, y - 20, 40, 40)
+        self.current_priority = 0
+        self.is_paused = False
+        self.walk_anim: Optional[str] = None
+        self.idle_anim: Optional[str] = None
+        self.movement_threshold = 0.5
+        self.anim_priority: Dict[str, int] = {}
 
-    def add_animation(self, name: str, cols: int, rows: int, frame_indices: List[int],
-                      frame_duration: int = 100, loop: bool = True):
-        if not self.spritesheet:
-            return
-        full_frames = self.spritesheet.create_grid_frames(cols=cols, rows=rows, duration=frame_duration)
-        filtered = [full_frames[i] for i in frame_indices if 0 <= i < len(full_frames)]
-        self.animations[name] = Animation(self.spritesheet, filtered, loop)
+    def add_anim(self, name: str, frames: List[int], cols: int, rows: int,
+                 speed: int = 100, loop: bool = True,
+                 priority: int = 0) -> None:
+        """Add animation to character."""
+        if not self.sprite:
+            raise ValueError("Character needs spritesheet_path to use animations")
+        self.sprite.add_frames(name, frames, cols, rows, speed, loop)
+        self.anim_priority[name] = priority
 
-    def play(self, name: str, reset: bool = False):
-        if name in self.animations and self.current_anim != name:
-            self.current_anim = name
-            if reset:
-                self.animations[name].reset()
+    def set_walk_idle(self, walk_anim: str, idle_anim: str) -> None:
+        """Enable auto-switching between walk/idle based on movement."""
+        self.walk_anim = walk_anim
+        self.idle_anim = idle_anim
 
-    def update_rect(self):
+    def play(self, anim_name: str, reset: bool = True) -> bool:
+        """Play animation respecting priority hierarchy."""
+        if not self.sprite or anim_name not in self.sprite.animations:
+            return False
+
+        new_priority = self.anim_priority.get(anim_name, 0)
+
+        # Block if current animation has higher priority
+        if self.current_anim and self.current_priority > new_priority:
+            return False
+
+        self.sprite.play(anim_name, reset)
+        self.current_anim = anim_name
+        self.current_priority = new_priority
+        return True
+
+    def pause(self) -> None:
+        """Pause current animation."""
+        self.is_paused = True
+
+    def resume(self) -> None:
+        """Resume paused animation."""
+        self.is_paused = False
+
+    def stop(self) -> None:
+        """Stop all animations."""
+        if self.sprite:
+            self.sprite.current = None
+        self.current_anim = None
+        self.current_priority = 0
+        self.is_paused = False
+
+    def is_playing(self, anim_name: Optional[str] = None) -> bool:
+        """Check if animation is playing."""
+        if not self.sprite or not self.sprite.current or self.is_paused:
+            return False
+        if anim_name:
+            return self.sprite.current == anim_name
+        return True
+
+    def is_done(self) -> bool:
+        """Check if current animation finished."""
+        if not self.sprite:
+            return False
+        return self.sprite.is_finished()
+
+    def move(self, dx: float, dy: float) -> None:
+        """Move character by offset."""
+        self.pos.x += dx
+        self.pos.y += dy
+
+    def set_position(self, x: float, y: float) -> None:
+        """Set character position."""
+        self.pos.x = x
+        self.pos.y = y
+
+    def update_rect(self) -> None:
+        """Update collision rect to match position."""
         self.rect.center = (int(self.pos.x), int(self.pos.y))
 
-    def draw(self, surface: pygame.Surface, dt_ms: int):
-        if self.current_anim and self.current_anim in self.animations:
-            img = self.animations[self.current_anim].update(dt_ms)
-            if img:
-                # Rysowanie wyśrodkowanego sprajtu
-                img_rect = img.get_rect(center=self.rect.center)
-                surface.blit(img, img_rect)
+    def _clear_priority_if_done(self) -> None:
+        """Reset priority once high-priority animation finishes."""
+        if self.current_anim and self.is_done():
+            self.current_priority = self.anim_priority.get(
+                self.idle_anim or self.walk_anim, 1
+            )
+
+    def _check_movement(self) -> None:
+        """Auto-switch between walk/idle based on movement."""
+        if not self.walk_anim or not self.idle_anim:
+            return
+
+        if self.current_priority > self.anim_priority.get(self.walk_anim, 1):
+            return
+
+        moved = self.pos.distance_to(self.last_pos)
+
+        if moved > self.movement_threshold:
+            if self.current_anim != self.walk_anim:
+                self.play(self.walk_anim)
         else:
-            # Rezerwowy rysunek (kółko) jeśli brak animacji
-            pygame.draw.circle(surface, "red", (int(self.pos.x), int(self.pos.y)), 20)
+            if self.current_anim != self.idle_anim:
+                self.play(self.idle_anim)
+
+        self.last_pos = self.pos.copy()
+
+    def update(self, dt: int) -> None:
+        """Update character logic and animations (call every frame)."""
+        self.update_rect()
+
+        if self.sprite and not self.is_paused:
+            self.sprite.update(dt)
+            self.sprite.set_position(int(self.pos.x - self.size),
+                                    int(self.pos.y - self.size))
+
+        self._clear_priority_if_done()
+        self._check_movement()
+
+    def get_current_frame(self) -> Optional[pygame.Surface]:
+        """Get current animation frame for rendering."""
+        if self.sprite and self.sprite.current:
+            return self.sprite.spritesheet.get_frame(
+                self.sprite.animations[self.sprite.current].frames[
+                    self.sprite.animations[self.sprite.current].current
+                ].rect
+            )
+        return None
 
 
-# ==========================================
-# 3. KLASY DLA GRACZA I DUCHA
-# ==========================================
+class Creature(Character):
+    """Character with physics (gravity, jumping, platforms)."""
+    
+    def __init__(self, x: float, y: float, speed: float = 2000,jump_force: float = -1000,
+                 spritesheet_path: Optional[str] = None):
+        """Initialize creature with physics."""
+        super().__init__(x, y, 40, spritesheet_path=spritesheet_path)
 
-class Creature(AnimatedCharacter):
-    def __init__(self, x: float, y: float, spritesheet_path: Optional[str] = None):
-        super().__init__(x, y, spritesheet_path)
-
-        # Statystyki gracza
-        self.hp = 100
-        self.power = 0
-
-        # Parametry fizyki
-        self.speed = 400
-        self.jump_force = -1000
+        # Physics
+        self.speed = speed
+        self.jump_force = jump_force
         self.gravity = 2000
         self.vel_y = 0
         self.is_grounded = False
-        self.size = 40
-        self.rect = pygame.Rect(x - self.size, y - self.size, self.size * 2, self.size * 2)
+        self.velocity = pygame.Vector2(0, 0)
 
-    def update(self, dt: float, platforms: list):
-        keys = pygame.key.get_pressed()
-
-        # 1. Skok
-        if keys[pygame.K_w] and self.is_grounded:
+    def move(self, dx: float, dy: float = 0) -> None:
+        """Move creature (input from main.py)."""
+        self.velocity.x = dx
+        
+    def jump(self) -> None:
+        """Jump (input from main.py)."""
+        if self.is_grounded:
             self.vel_y = self.jump_force
             self.is_grounded = False
 
-        # 2. Grawitacja
+    def apply_gravity(self, dt: float, fast_fall: bool = False) -> None:
+        """Apply gravity (called from main.py)."""
         if not self.is_grounded:
-            current_gravity = self.gravity * 3 if keys[pygame.K_s] else self.gravity
+            current_gravity = self.gravity * 3 if fast_fall else self.gravity
             self.vel_y += current_gravity * dt
 
+    def update(self, dt: float, platforms: List[pygame.Rect]) -> None:
+        """Update creature physics and animation."""
+        # Apply horizontal movement
+        self.pos.x += self.velocity.x * dt
+        self.velocity.x = 0
+        
+        # Apply vertical movement
         self.pos.y += self.vel_y * dt
 
-        # 3. Ruch i sterowanie animacjami
-        moving = False
-        if keys[pygame.K_a]:
-            self.pos.x -= self.speed * dt
-            moving = True
-        if keys[pygame.K_d]:
-            self.pos.x += self.speed * dt
-            moving = True
+        self.update_rect()
 
-        # Przełączanie animacji na podstawie stanu gracza
-        if moving:
-            self.play('walk')
-        else:
-            self.play('idle')
+        # Collision with platforms - IMPROVED
+        self.is_grounded = False
+        for platform in platforms:
+            if self.rect.colliderect(platform):
+                # Only collide if falling (vel_y >= 0)
+                if self.vel_y >= 0:
+                    # Check if we're above the platform
+                    if self.pos.y < platform.centery:
+                        self.pos.y = platform.top - self.size
+                        self.vel_y = 0
+                        self.is_grounded = True
+                        break
 
         self.update_rect()
 
-        # 4. Kolizje z platformami
-        was_grounded_this_frame = False
-        for platform in platforms:
-            if self.rect.colliderect(platform) and self.vel_y >= 0:
-                if (self.pos.y + self.size) - self.vel_y * dt <= platform.top + 10:
-                    self.pos.y = platform.top - self.size
-                    self.vel_y = 0
-                    was_grounded_this_frame = True
-                    self.update_rect()
-
-        self.is_grounded = was_grounded_this_frame
+        # Update animations (no input handling here)
+        Character.update(self, int(dt * 1000))
 
 
-class GhostMouse(AnimatedCharacter):
-    def __init__(self, x=0, y=0):
-        super().__init__(x, y)
-        self.hp = 50
+class GhostMouse(Character):
+    """Character that follows mouse cursor."""
 
-    def interact(self, objects):
+    def __init__(self, x: float, y: float,
+                 spritesheet_path: Optional[str] = None):
+        """Initialize ghost mouse."""
+        super().__init__(x, y, 20, spritesheet_path=spritesheet_path)
+        self.interaction_range = 100
+
+    def update(self, dt: int) -> None:
+        """Update position to follow mouse."""
+        mouse_x, mouse_y = pygame.mouse.get_pos()
+        self.pos.x = mouse_x
+        self.pos.y = mouse_y
+        self.update_rect()
+
+        super().update(dt)
+
+    def interact(self, objects: List) -> Optional[object]:
+        """Check if interacting with any object."""
         for obj in objects:
             if self.rect.colliderect(obj.rect):
-                print("Duch oddziałuje z obiektem")
+                return obj
+        return None
 
-    def update(self, dt=0):
-        self.pos = pygame.Vector2(pygame.mouse.get_pos())
-        self.update_rect()
 
-    def draw(self, surface: pygame.Surface, dt_ms: int = 0):
-        # Domyślne kółko dla ducha
-        pygame.draw.circle(surface, "cyan", (int(self.pos.x), int(self.pos.y)), 20)
+class CharacterManager:
+    """Manage multiple characters easily."""
+
+    def __init__(self):
+        self.characters: Dict[str, Character] = {}
+
+    def add(self, name: str, character: Character) -> None:
+        """Add character to manager."""
+        self.characters[name] = character
+
+    def remove(self, name: str) -> None:
+        """Remove character from manager."""
+        if name in self.characters:
+            del self.characters[name]
+
+    def get(self, name: str) -> Optional[Character]:
+        """Get character by name."""
+        return self.characters.get(name)
+
+    def update_all(self, dt: float, platforms: Optional[List[pygame.Rect]] = None) -> None:
+        """Update all characters."""
+        for char in self.characters.values():
+            if isinstance(char, Creature) and platforms:
+                char.update(dt, platforms)
+            else:
+                char.update(int(dt * 1000))
