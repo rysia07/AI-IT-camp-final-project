@@ -169,11 +169,19 @@ class SpriteObject:
             return self.animations[self.current].update(dt)
         return None
 
-    def draw(self, surface: pygame.Surface):
+    def draw(self, surface):
+
         if self.current and self.current in self.animations:
             anim = self.animations[self.current]
-            img = anim.spritesheet.get_frame(anim.frames[anim.current].rect)
-            surface.blit(img, self.position)
+
+            img = anim.spritesheet.get_frame(
+                anim.frames[anim.current].rect
+            )
+
+            surface.blit(
+                img,
+                (self.position[0] - 64, self.position[1] - 128)
+            )
 
     def set_position(self, x: int, y: int):
         self.position = (x, y)
