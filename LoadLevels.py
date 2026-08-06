@@ -4,6 +4,10 @@ import random
 from typing import List, Dict, Tuple, Optional
 
 
+global player_pos
+player_pos = (0,0)
+
+
 class RectObject:
     """Represents a drawable rectangle."""
 
@@ -91,10 +95,12 @@ def load_rects_from_file(filepath: str) -> RectManager:
                 # Skip empty lines and comments
                 if not line or line.startswith('#'):
                     continue
-                if not line.startswith('p'):
-                    continue
+
+                if line.startswith('p'):
+                    print("aaa")
                 else:
                     pass
+
 
                 # Split by space or comma
                 parts = line.replace(',', ' ').split()
@@ -104,18 +110,20 @@ def load_rects_from_file(filepath: str) -> RectManager:
                     continue
 
                 try:
-                    x = float(parts[0])
-                    y = float(parts[1])
-                    width = float(parts[2])
-                    height = float(parts[3])
+                    if not parts[0] == 'p':
+                        x = float(parts[0])
+                        y = float(parts[1])
+                        width = float(parts[2])
+                        height = float(parts[3])
 
-                    # Optional: name
-                    name = parts[4] if len(parts) > 4 else ""
+                        # Optional: name
+                        name = parts[4] if len(parts) > 4 else ""
 
-                    # Color is now random!
-                    rect_obj = RectObject(x, y, width, height, name=name)
-                    manager.add(rect_obj)
-
+                        # Color is now random!
+                        rect_obj = RectObject(x, y, width, height, name=name)
+                        manager.add(rect_obj)
+                    else:
+                        player_pos = (float(parts[0]), float(parts[1]))
                 except (ValueError, IndexError) as e:
                     print(f"⚠️ Line {line_num}: {line} - Error: {e}")
                     continue
@@ -127,6 +135,9 @@ def load_rects_from_file(filepath: str) -> RectManager:
         print(f"❌ File not found: {filepath}")
         return manager
 
+def get_player_pos():
+    return player_pos
+
 
 # ============= DEMO =============
 if __name__ == "__main__":
@@ -135,13 +146,13 @@ if __name__ == "__main__":
     clock = pygame.time.Clock()
 
     # Load rects from file
-    manager = load_rects_from_file('level.txt')
+    manager2 = load_rects_from_file('level.txt')
 
     # Add some rects manually if file doesn't exist
-    if len(manager.rects) == 0:
-        manager.add(RectObject(50, 500, 800, 50, name="ground"))
-        manager.add(RectObject(200, 400, 100, 50, name="platform1"))
-        manager.add(RectObject(500, 300, 150, 50, name="platform2"))
+    if len(manager2.rects) == 0:
+        manager2.add(RectObject(50, 500, 800, 50, name="ground"))
+        manager2.add(RectObject(200, 400, 100, 50, name="platform1"))
+        manager2.add(RectObject(500, 300, 150, 50, name="platform2"))
 
     running = True
     while running:
@@ -152,11 +163,11 @@ if __name__ == "__main__":
                 running = False
 
         screen.fill((30, 30, 30))
-        manager.draw_all(screen)
+        manager2.draw_all(screen)
 
         # Display info
         font = pygame.font.Font(None, 32)
-        text = font.render(f"Rects loaded: {len(manager.rects)}", True, (255, 255, 255))
+        text = font.render(f"Rects loaded: {len(manager2.rects)}", True, (255, 255, 255))
         screen.blit(text, (10, 10))
 
         pygame.display.flip()
