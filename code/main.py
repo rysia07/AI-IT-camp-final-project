@@ -43,7 +43,7 @@ pygame.mouse.set_visible(True)
 # =========================================================
 
 platform_mgr = PlatformManager(
-    "kievinay-train-6558870_1920.png"
+    "pictures/kievinay-train-6558870_1920.png"
 )
 
 
@@ -57,7 +57,7 @@ manager = CharacterManager()
 player = Creature(
     450,
     300,
-    "ludzik.png"
+    "pictures/ludzik.png"
 )
 
 player.movement_threshold = 0.1

@@ -146,7 +146,7 @@ if __name__ == "__main__":
     clock = pygame.time.Clock()
 
     # Load rects from file
-    manager2 = load_rects_from_file('level.txt')
+    manager2 = load_rects_from_file('../level.txt')
 
     # Add some rects manually if file doesn't exist
     if len(manager2.rects) == 0:
