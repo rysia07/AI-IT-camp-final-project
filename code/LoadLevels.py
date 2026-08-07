@@ -6,7 +6,7 @@ from typing import List, Dict, Tuple, Optional
 
 
 
-player_pos = (0,0)
+
 
 class RectObject:
     """Represents a drawable rectangle."""
@@ -86,6 +86,7 @@ def load_rects_from_file(filepath: str) -> RectManager:
         RectManager with loaded rectangles
     """
     manager = RectManager()
+    player_pos = (0, 0)
 
     try:
         with open(filepath, 'r') as f:
@@ -103,9 +104,9 @@ def load_rects_from_file(filepath: str) -> RectManager:
 
 
                 # Split by space or comma
-                    parts = line.replace(',', ' ').split()
+                parts = line.replace(',', ' ').split()
 
-                if len(parts) < 4:
+                if len(parts) < 4 and not parts[0] == 'p':
                     print(f"⚠️ Line {line_num}: Invalid format (need at least x y width height)")
                     continue
 
@@ -123,13 +124,15 @@ def load_rects_from_file(filepath: str) -> RectManager:
                         rect_obj = RectObject(x, y, width, height, name=name)
                         manager.add(rect_obj)
                     else:
-                        _player_pos = (float(parts[0]), float(parts[1]))
+                        player_pos = (float(parts[1]), float(parts[2]))
+
                 except (ValueError, IndexError) as e:
                     print(f"⚠️ Line {line_num}: {line} - Error: {e}")
                     continue
 
         print(f"✅ Loaded {len(manager.rects)} rectangles from {filepath}")
-        return manager
+        return manager, player_pos
+
 
     except FileNotFoundError:
         print(f"❌ File not found: {filepath}")
