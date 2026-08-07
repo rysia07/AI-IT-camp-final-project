@@ -2,7 +2,7 @@
 import sys
 import pygame
 from Characters import Creature, CharacterManager
-from GUI import Button, MainMenu
+from GUI import MainMenu
 # ============= INITIALIZATION =============
 pygame.init()
 WIDTH, HEIGHT = 900, 600
@@ -25,7 +25,10 @@ player.add_anim('attack', frames=[6, 7, 8], cols=3, rows=3,
 player.set_walk_idle('walk', 'idle')
 player.play('idle')
 manager.add('player', player)
-
+current_state = 0
+MENU = 0
+menu = MainMenu(WIDTH, HEIGHT)
+keys = pygame.key.get_pressed()
 # ============= PLATFORMS =============
 platforms = [
     pygame.Rect(50, 500, 800, 50),  # Ground
@@ -35,16 +38,17 @@ platforms = [
 
 # ============= MAIN LOOP =============
 running = True
-
+PLAYING = 0
 while running:
     dt = clock.tick(60) / 1000.0
 
     # Get mouse info
     mouse_pos = pygame.mouse.get_pos()
-    mouse_pressed = pygame.mouse.get_presses()
+    mouse_pressed = pygame.mouse.get_pressed()
+    events = pygame.event.get()
 
     # Events
-    for event in pygame.event.get():
+    for event in events:
         if event.type == pygame.QUIT:
             running = False
 
@@ -56,12 +60,12 @@ while running:
             current_state = PLAYING
         elif clicked_button == 'quit':
             running = False
-        # TODO: add 'options' and 'credits' functionality later
+        # options/credits: add handlers later
 
-    elif current_state == PLAYING:
+        elif current_state == PLAYING:
 
         # ========== INPUT HANDLING (ONLY IN MAIN) ==========
-    keys = pygame.key.get_pressed()
+            keys = pygame.key.get_pressed()
 
     # Movement (A / D)
     if keys[pygame.K_a]:
