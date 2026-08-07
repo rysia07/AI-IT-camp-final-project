@@ -29,149 +29,80 @@ class Interactive:
             2
         )
 
+
 class Lever(Interactive):
 
     def __init__(self, x, y, w=100, h=20, direction="left"):
-
-        super().__init__(
-            x,
-            y,
-            w,
-            h
-        )
-
+        super().__init__(x, y, w, h)
         self.enabled = False
         self.direction = direction
         self.enter_side = None
 
     def update(self, creature, ghost):
+        # Pobieramy dokładną pozycję ŚRODKA ducha z tej i poprzedniej klatki
+        prev_x, prev_y = ghost.last_pos.x, ghost.last_pos.y
+        curr_x, curr_y = ghost.pos.x, ghost.pos.y
 
         # ==========================================
-        # LEWO / PRAWO
+        # LEWO / PRAWO (Przełączanie po przejściu w poziomie)
         # ==========================================
-
         if self.direction in ("left", "right"):
+            # Upewniamy się, że duch jest na wysokości Y dźwigni
+            if self.rect.top <= curr_y <= self.rect.bottom:
 
-            # POPRZEDNIA pozycja hitboxa ducha
-            previous_left = ghost.last_pos.x - ghost.rect.width / 2
-            previous_right = ghost.last_pos.x + ghost.rect.width / 2
+                if self.enter_side is None:
+                    # Wejście od lewej
+                    if prev_x <= self.rect.left and curr_x > self.rect.left:
+                        self.enter_side = "left"
+                    # Wejście od prawej
+                    elif prev_x >= self.rect.right and curr_x < self.rect.right:
+                        self.enter_side = "right"
 
-            # OBECNA pozycja hitboxa ducha
-            current_left = ghost.rect.left
-            current_right = ghost.rect.right
+                elif self.enter_side == "left":
+                    # Przejście całkowicie na drugą stronę (w prawo)
+                    if curr_x >= self.rect.right:
+                        self.enabled = not self.enabled
+                        self.enter_side = None
 
-            # ======================================
-            # NIE ROZPOCZĘTO PRZEJŚCIA
-            # ======================================
+                elif self.enter_side == "right":
+                    # Przejście całkowicie na drugą stronę (w lewo)
+                    if curr_x <= self.rect.left:
+                        self.enabled = not self.enabled
+                        self.enter_side = None
 
-            if self.enter_side is None:
-
-                # Duch wchodzi z lewej
-                if (
-                        previous_right <= self.rect.left
-                        and
-                        current_right > self.rect.left
-                ):
-
-                    self.enter_side = "left"
-
-
-                # Duch wchodzi z prawej
-                elif (
-                        previous_left >= self.rect.right
-                        and
-                        current_left < self.rect.right
-                ):
-
-                    self.enter_side = "right"
-
-
-            # ======================================
-            # WESZEDŁ Z LEWEJ
-            # ======================================
-
-            elif self.enter_side == "left":
-
-                # Musi CAŁKOWICIE przejść za prawą krawędź
-                if current_left >= self.rect.right:
-                    self.enabled = not self.enabled
-                    self.enter_side = None
-
-
-            # ======================================
-            # WESZEDŁ Z PRAWEJ
-            # ======================================
-
-            elif self.enter_side == "right":
-
-                # Musi CAŁKOWICIE przejść za lewą krawędź
-                if current_right <= self.rect.left:
-                    self.enabled = not self.enabled
-                    self.enter_side = None
-
+            else:
+                # Jeśli duch odleciał w górę/dół poza dźwignię, resetujemy stan przejścia
+                self.enter_side = None
 
         # ==========================================
-        # GÓRA / DÓŁ
+        # GÓRA / DÓŁ (Przełączanie po przejściu w pionie)
         # ==========================================
-
         elif self.direction in ("top", "bottom"):
+            # Upewniamy się, że duch jest na szerokości X dźwigni
+            if self.rect.left <= curr_x <= self.rect.right:
 
-            # POPRZEDNIA pozycja hitboxa ducha
-            previous_top = ghost.last_pos.y - ghost.rect.height / 2
-            previous_bottom = ghost.last_pos.y + ghost.rect.height / 2
+                if self.enter_side is None:
+                    # Wejście od góry
+                    if prev_y <= self.rect.top and curr_y > self.rect.top:
+                        self.enter_side = "top"
+                    # Wejście od dołu
+                    elif prev_y >= self.rect.bottom and curr_y < self.rect.bottom:
+                        self.enter_side = "bottom"
 
-            # OBECNA pozycja hitboxa ducha
-            current_top = ghost.rect.top
-            current_bottom = ghost.rect.bottom
+                elif self.enter_side == "top":
+                    # Przejście całkowicie w dół
+                    if curr_y >= self.rect.bottom:
+                        self.enabled = not self.enabled
+                        self.enter_side = None
 
-            # ======================================
-            # NIE ROZPOCZĘTO PRZEJŚCIA
-            # ======================================
+                elif self.enter_side == "bottom":
+                    # Przejście całkowicie w górę
+                    if curr_y <= self.rect.top:
+                        self.enabled = not self.enabled
+                        self.enter_side = None
 
-            if self.enter_side is None:
-
-                # Duch wchodzi z góry
-                if (
-                        previous_bottom <= self.rect.top
-                        and
-                        current_bottom > self.rect.top
-                ):
-
-                    self.enter_side = "top"
-
-
-                # Duch wchodzi z dołu
-                elif (
-                        previous_top >= self.rect.bottom
-                        and
-                        current_top < self.rect.bottom
-                ):
-
-                    self.enter_side = "bottom"
-
-
-            # ======================================
-            # WESZEDŁ Z GÓRY
-            # ======================================
-
-            elif self.enter_side == "top":
-
-                # Musi CAŁKOWICIE przejść za dół
-                if current_top >= self.rect.bottom:
-                    self.enabled = not self.enabled
-                    self.enter_side = None
-
-
-            # ======================================
-            # WESZEDŁ Z DOŁU
-            # ======================================
-
-            elif self.enter_side == "bottom":
-
-                # Musi CAŁKOWICIE przejść za górę
-                if current_bottom <= self.rect.top:
-                    self.enabled = not self.enabled
-                    self.enter_side = None
+            else:
+                self.enter_side = None
 
     def draw(self, surface):
 
@@ -183,46 +114,83 @@ class Lever(Interactive):
             self.rect
         )
 
+
 class CodePanel(Interactive):
 
-    def __init__(self, x, y):
+    def __init__(self, x, y, code):
+        super().__init__(x, y, 60, 60)
 
-        super().__init__(
-            x,
-            y,
-            60,
-            60
-        )
-
-        self.code = "1234"
+        self.code = code
         self.current = ""
+        self.is_open = False  # Czy okienko wpisywania jest aktywne?
+        self.player_near = False  # Czy gracz stoi blisko panelu?
+
+    def update(self, creature, ghost):
+        # Sprawdzamy, czy gracz stoi przy panelu
+        self.player_near = creature.rect.colliderect(self.rect)
+
+        # Jeśli gracz odejdzie od panelu, automatycznie zamykamy okienko
+        if not self.player_near and self.is_open:
+            self.is_open = False
+            self.current = ""
 
     def handle_event(self, event):
-
         if event.type == pygame.KEYDOWN:
+            # Otwieranie / Zamykanie okienka klawiszem Q (tylko gdy gracz stoi blisko)
+            if event.key == pygame.K_q and self.player_near:
+                self.is_open = not self.is_open
+                self.current = ""  # Resetujemy kod przy otwarciu/zamknięciu
 
-            if event.unicode.isdigit():
-
-                self.current += event.unicode
-
-            if len(self.current) > len(self.code):
-
+            # Zamykanie okienka klawiszem ESC
+            elif event.key == pygame.K_ESCAPE and self.is_open:
+                self.is_open = False
                 self.current = ""
 
-            if self.current == self.code:
+            # Wpisywanie kodu (działa TYLKO gdy okienko jest otwarte)
+            elif self.is_open:
+                if event.unicode.isdigit():
+                    self.current += event.unicode
 
-                print("Kod poprawny!")
+                # Usuwanie ostatniej cyfry klawiszem Backspace
+                elif event.key == pygame.K_BACKSPACE:
+                    self.current = self.current[:-1]
 
-                self.current = ""
+                # Jeśli wpisano za dużo cyfr -> reset
+                if len(self.current) > len(self.code):
+                    self.current = ""
+
+                # Sprawdzenie poprawności kodu
+                if self.current == self.code:
+                    print("Kod poprawny! Otwieranie...")
+                    self.is_open = False
+                    self.current = ""
 
     def draw(self, surface):
+        # Rysujemy główny niebieski panel
+        pygame.draw.rect(surface, "blue", self.rect)
 
-        pygame.draw.rect(
-            surface,
-            "blue",
-            self.rect
-        )
+        # 1. Podpowiedź "Press Q" gdy gracz stoi w zasięgu
+        if self.player_near and not self.is_open:
+            font = pygame.font.Font(None, 24)
+            hint = font.render("[Q] Enter Code", True, (255, 255, 255))
+            surface.blit(hint, (self.rect.x - 10, self.rect.y - 25))
 
+        # 2. OKIENKO POP-UP do wpisywania kodu
+        if self.is_open:
+            # Tło okienka (szary prostokąt nad panelem)
+            popup_rect = pygame.Rect(self.rect.x - 30, self.rect.y - 70, 120, 50)
+            pygame.draw.rect(surface, (40, 40, 40), popup_rect)
+            pygame.draw.rect(surface, "white", popup_rect, 2)  # Biała ramka
+
+            # Wyświetlanie wpisywanych cyfr (lub gwiazdek)
+            font = pygame.font.Font(None, 32)
+            # Pokazujemy cyfry i kropki/gwiazdki dla pozostałych miejsc
+            display_text = self.current + "_" * (len(self.code) - len(self.current))
+            text_surf = font.render(display_text, True, (0, 255, 0))  # Zielony tekst
+
+            # Wyśrodkowanie tekstu w okienku
+            text_rect = text_surf.get_rect(center=popup_rect.center)
+            surface.blit(text_surf, text_rect)
 
 class ScoringButton(Interactive):
 
@@ -298,3 +266,30 @@ class LevelGate(Interactive):
             "purple",
             self.rect
         )
+
+# =========================================================
+# INTERACTIVE MANAGER
+# =========================================================
+
+class InteractiveManager():
+
+    def __init__(self):
+        self.objects = []
+
+    def add(self, obj: Interactive):
+        self.objects.append(obj)
+
+    def update_all(self, creature, ghost):
+        for obj in self.objects:
+            if obj.active:
+                obj.update(creature, ghost)
+
+    def handle_event_all(self, event):
+        for obj in self.objects:
+            if obj.active:
+                obj.handle_event(event)
+
+    def draw_all(self, surface):
+        for obj in self.objects:
+            if obj.active:
+                obj.draw(surface)
