@@ -35,84 +35,78 @@ class Lever(Interactive):
     def __init__(self, x, y, w=100, h=20, direction="left"):
         super().__init__(x, y, w, h)
         self.enabled = False
-        self.direction = direction
+        self.direction = direction  # "left", "right", "top", lub "bottom"
         self.enter_side = None
 
     def update(self, creature, ghost):
-        # Pobieramy dokładną pozycję ŚRODKA ducha z tej i poprzedniej klatki
+        # Pobieramy pozycję ŚRODKA ducha
         prev_x, prev_y = ghost.last_pos.x, ghost.last_pos.y
         curr_x, curr_y = ghost.pos.x, ghost.pos.y
 
         # ==========================================
-        # LEWO / PRAWO (Przełączanie po przejściu w poziomie)
+        # LEWO / PRAWO (Ruch poziomy)
         # ==========================================
         if self.direction in ("left", "right"):
-            # Upewniamy się, że duch jest na wysokości Y dźwigni
+            # Sprawdzamy czy duch znajduje się na wysokości Y dźwigni
             if self.rect.top <= curr_y <= self.rect.bottom:
 
+                # 1. WYKRYWANIE WEJŚCIA
                 if self.enter_side is None:
-                    # Wejście od lewej
                     if prev_x <= self.rect.left and curr_x > self.rect.left:
                         self.enter_side = "left"
-                    # Wejście od prawej
                     elif prev_x >= self.rect.right and curr_x < self.rect.right:
                         self.enter_side = "right"
 
-                elif self.enter_side == "left":
-                    # Przejście całkowicie na drugą stronę (w prawo)
-                    if curr_x >= self.rect.right:
-                        self.enabled = not self.enabled
-                        self.enter_side = None
+                # 2. WYKRYWANIE WYJŚCIA (Przejście na wylot)
+                elif self.enter_side == "left" and curr_x >= self.rect.right:
+                    # Przejście Z LEWEJ NA PRAWO:
+                    # Jeśli `direction == "left"` -> WŁĄCZA (True)
+                    # Jeśli `direction == "right"` -> WYŁĄCZA (False)
+                    self.enabled = (self.direction == "left")
+                    self.enter_side = None
 
-                elif self.enter_side == "right":
-                    # Przejście całkowicie na drugą stronę (w lewo)
-                    if curr_x <= self.rect.left:
-                        self.enabled = not self.enabled
-                        self.enter_side = None
+                elif self.enter_side == "right" and curr_x <= self.rect.left:
+                    # Przejście Z PRAWEJ NA LEWO:
+                    # Jeśli `direction == "right"` -> WŁĄCZA (True)
+                    # Jeśli `direction == "left"` -> WYŁĄCZA (False)
+                    self.enabled = (self.direction == "right")
+                    self.enter_side = None
 
             else:
-                # Jeśli duch odleciał w górę/dół poza dźwignię, resetujemy stan przejścia
+                # Jeśli duch wyleciał góra/dół - anulujemy ruch
                 self.enter_side = None
 
         # ==========================================
-        # GÓRA / DÓŁ (Przełączanie po przejściu w pionie)
+        # GÓRA / DÓŁ (Ruch pionowy)
         # ==========================================
         elif self.direction in ("top", "bottom"):
-            # Upewniamy się, że duch jest na szerokości X dźwigni
             if self.rect.left <= curr_x <= self.rect.right:
 
+                # 1. WYKRYWANIE WEJŚCIA
                 if self.enter_side is None:
-                    # Wejście od góry
                     if prev_y <= self.rect.top and curr_y > self.rect.top:
                         self.enter_side = "top"
-                    # Wejście od dołu
                     elif prev_y >= self.rect.bottom and curr_y < self.rect.bottom:
                         self.enter_side = "bottom"
 
-                elif self.enter_side == "top":
-                    # Przejście całkowicie w dół
-                    if curr_y >= self.rect.bottom:
-                        self.enabled = not self.enabled
-                        self.enter_side = None
+                # 2. WYKRYWANIE WYJŚCIA (Przejście na wylot)
+                elif self.enter_side == "top" and curr_y >= self.rect.bottom:
+                    # Przejście Z GÓRY W DÓŁ
+                    self.enabled = (self.direction == "top")
+                    self.enter_side = None
 
-                elif self.enter_side == "bottom":
-                    # Przejście całkowicie w górę
-                    if curr_y <= self.rect.top:
-                        self.enabled = not self.enabled
-                        self.enter_side = None
+                elif self.enter_side == "bottom" and curr_y <= self.rect.top:
+                    # Przejście Z DOŁU W GÓRĘ
+                    self.enabled = (self.direction == "bottom")
+                    self.enter_side = None
 
             else:
                 self.enter_side = None
 
     def draw(self, surface):
-
         color = "green" if self.enabled else "red"
-
-        pygame.draw.rect(
-            surface,
-            color,
-            self.rect
-        )
+        pygame.draw.rect(surface, color, self.rect)
+        pygame.draw.rect(surface, "black", self.rect, 2)
 
 
 class CodePanel(Interactive):
@@ -194,42 +188,68 @@ class CodePanel(Interactive):
 
 class ScoringButton(Interactive):
 
-    def __init__(self, x, y, required_power):
-
-        super().__init__(
-            x,
-            y,
-            80,
-            20
-        )
+    def __init__(self, x, y, required_power=0):
+        super().__init__(x, y, 80, 20)
 
         self.required_power = required_power
         self.points = 100
         self.used = False
 
     def update(self, creature, ghost):
-
-        if self.used:
-            return
-
+        # Sprawdzamy, czy gracz w ogóle dotyka przycisku
         if creature.rect.colliderect(self.rect):
 
-            if creature.power >= self.required_power:
-
-                print("+", self.points, "pkt")
-
+            # ==========================================
+            # 1. LOGIKA PRZYZNAWANIA PUNKTÓW
+            # ==========================================
+            if not self.used and creature.power >= self.required_power:
+                if hasattr(creature, 'score'):
+                    creature.score += self.points
+                print(f"+ {self.points} pkt!")
                 self.used = True
 
-    def draw(self, surface):
+            # ==========================================
+            # 2. KOLIZJA ZE WSZYSTKICH 4 STRON
+            # ==========================================
+            # Obliczamy ile pikseli gracz wnika w obiekt z każdej strony
+            overlap_left   = creature.rect.right - self.rect.left
+            overlap_right  = self.rect.right - creature.rect.left
+            overlap_top    = creature.rect.bottom - self.rect.top
+            overlap_bottom = self.rect.bottom - creature.rect.top
 
+            # Znajdujemy najmniejsze wniknięcie (najkrótszy kierunek wypchnięcia)
+            min_overlap = min(overlap_left, overlap_right, overlap_top, overlap_bottom)
+
+            # --- KOLIZJA Z GÓRY (Lądowanie na przycisku) ---
+            if min_overlap == overlap_top and creature.vel_y >= 0:
+                creature.rect.bottom = self.rect.top
+                creature.vel_y = 0
+                creature.is_grounded = True
+                creature.pos.y = creature.rect.centery
+
+            # --- KOLIZJA Z DOŁU (Uderzenie głową od dołu) ---
+            elif min_overlap == overlap_bottom and creature.vel_y < 0:
+                creature.rect.top = self.rect.bottom
+                creature.vel_y = 0
+                creature.pos.y = creature.rect.centery
+
+            # --- KOLIZJA Z LEWEJ STRONY (Wpadnięcie od lewej) ---
+            elif min_overlap == overlap_left:
+                creature.rect.right = self.rect.left
+                creature.pos.x = creature.rect.centerx
+
+            # --- KOLIZJA Z PRAWEJ STRONY (Wpadnięcie od prawej) ---
+            elif min_overlap == overlap_right:
+                creature.rect.left = self.rect.right
+                creature.pos.x = creature.rect.centerx
+
+    def draw(self, surface):
         color = "gray" if self.used else "yellow"
 
-        pygame.draw.rect(
-            surface,
-            color,
-            self.rect
-        )
-
+        # Wypełnienie przycisku
+        pygame.draw.rect(surface, color, self.rect)
+        # Czarna ramka wokół przycisku
+        pygame.draw.rect(surface, "black", self.rect, 2)
 
 class LevelGate(Interactive):
 

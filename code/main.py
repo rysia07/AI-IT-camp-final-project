@@ -65,7 +65,7 @@ interactive_manager = InteractiveManager()
 # Dodajemy obiekty bezpośrednio do menedżera
 interactive_manager.add(Lever(300, 300, 100, 20, direction="left"))
 interactive_manager.add(CodePanel(700, 300, code="1234"))
-interactive_manager.add(ScoringButton(250, 450, required_power=0))  # Power 0, żeby działało od razu
+interactive_manager.add(ScoringButton(490, 490, required_power=0))  # Power 0, żeby działało od razu
 interactive_manager.add(LevelGate(800, 400))
 
 # =========================================================
