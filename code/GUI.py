@@ -59,3 +59,101 @@ class MainMenu:
             if button.is_clicked(mouse_pos, mouse_pressed):
                 return name
         return None
+
+class OptionsScreen:
+        def __init__(self, screen_width, screen_height):
+            self.screen_width = screen_width
+            self.screen_height = screen_height
+            self.font = pygame.font.Font(None, 60)
+            self.small_font = pygame.font.Font(None, 36)
+
+        def draw(self, screen):
+            screen.fill((30, 30, 30))
+
+            title = self.font.render(
+                "OPTIONS",
+                True,
+                (255, 255, 255)
+            )
+
+            placeholder = self.small_font.render(
+                "PLACEHOLDER - G TEAM IS COOKING",
+                True,
+                (200, 200, 200)
+            )
+
+            back = self.small_font.render(
+                "Press ESC to return",
+                True,
+                (150, 150, 150)
+            )
+
+            screen.blit(
+                title,
+                title.get_rect(
+                    center=(self.screen_width // 2, 150)
+                )
+            )
+
+            screen.blit(
+                placeholder,
+                placeholder.get_rect(
+                    center=(self.screen_width // 2, 280)
+                )
+            )
+
+            screen.blit(
+                back,
+                back.get_rect(
+                    center=(self.screen_width // 2, 400)
+                )
+            )
+
+class CreditsScreen:
+        def __init__(self, screen_width, screen_height):
+            self.screen_width = screen_width
+            self.screen_height = screen_height
+            self.font = pygame.font.Font(None, 60)
+            self.small_font = pygame.font.Font(None, 36)
+
+        def draw(self, screen):
+            screen.fill((30, 30, 30))
+
+            title = self.font.render(
+                "CREDITS",
+                True,
+                (255, 255, 255)
+            )
+
+            placeholder = self.small_font.render(
+                "PLACEHOLDER - CREDITS COMING SOON",
+                True,
+                (200, 200, 200)
+            )
+
+            back = self.small_font.render(
+                "Press ESC to return",
+                True,
+                (150, 150, 150)
+            )
+
+            screen.blit(
+                title,
+                title.get_rect(
+                    center=(self.screen_width // 2, 150)
+                )
+            )
+
+            screen.blit(
+                placeholder,
+                placeholder.get_rect(
+                    center=(self.screen_width // 2, 280)
+                )
+            )
+
+            screen.blit(
+                back,
+                back.get_rect(
+                    center=(self.screen_width // 2, 400)
+                )
+            )
