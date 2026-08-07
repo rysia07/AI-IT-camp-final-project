@@ -23,16 +23,9 @@ class Character:
         self.size = size
         self.image = image
 
-        # =====================
-        # HITBOX
-        # =====================
-
-        self.rect = pygame.Rect(
-            x - size,
-            y - size,
-            size * 2,
-            size * 4
-        )
+        # Hitbox tworzymy wyśrodkowany wokół (x, y)
+        self.rect = pygame.Rect(0, 0, size, size)
+        self.rect.center = (int(x), int(y))
 
         # =====================
         # ANIMACJE
@@ -116,10 +109,8 @@ class Character:
     # =====================
 
     def update_rect(self):
-        self.rect.center = (
-            int(self.pos.x),
-            int(self.pos.y)
-        )
+        """Aktualizuje pozycję hitboksu do punktu pozycji obiektu."""
+        self.rect.center = (int(self.pos.x), int(self.pos.y))
 
     # =====================
     # UPDATE
@@ -160,8 +151,17 @@ class Character:
                     int(self.pos.x),
                     int(self.pos.y)
                 ),
-                self.size
+                int(self.size / 2)
             )
+
+    def draw_hitbox(self, surface, color="red"):
+
+        pygame.draw.rect(
+            surface,
+            color,
+            self.rect,
+            2
+        )
 
 
 # =========================================================
@@ -169,13 +169,11 @@ class Character:
 # =========================================================
 
 class Creature(Character):
-
     def __init__(self, x, y, spritesheet_path=None):
-
         super().__init__(
             x,
             y,
-            40,
+            64,  # <-- Zwiększyliśmy rozmiar hitboksu z 32 na 64!
             spritesheet_path=spritesheet_path
         )
 
@@ -196,7 +194,7 @@ class Creature(Character):
             self.vel_y = self.jump_force
             self.is_grounded = False
 
-    def update(self, dt, platforms):
+    def update(self, dt, platforms=None):
 
         keys = pygame.key.get_pressed()
 
@@ -245,19 +243,20 @@ class Creature(Character):
 
         self.update_rect()
 
-        for platform in platforms:
+        if platforms:
+            for platform in platforms:
 
-            if self.rect.colliderect(platform):
+                if self.rect.colliderect(platform):
 
-                if dx > 0:
+                    if dx > 0:
 
-                    self.rect.right = platform.left
+                        self.rect.right = platform.left
 
-                elif dx < 0:
+                    elif dx < 0:
 
-                    self.rect.left = platform.right
+                        self.rect.left = platform.right
 
-                self.pos.x = self.rect.centerx
+                    self.pos.x = self.rect.centerx
 
         # =================================================
         # SKOK
@@ -289,29 +288,30 @@ class Creature(Character):
 
         self.is_grounded = False
 
-        for platform in platforms:
+        if platforms:
+            for platform in platforms:
 
-            if self.rect.colliderect(platform):
+                if self.rect.colliderect(platform):
 
-                if self.vel_y > 0:
+                    if self.vel_y > 0:
 
-                    # LĄDOWANIE
+                        # LĄDOWANIE
 
-                    self.rect.bottom = platform.top
+                        self.rect.bottom = platform.top
 
-                    self.vel_y = 0
+                        self.vel_y = 0
 
-                    self.is_grounded = True
+                        self.is_grounded = True
 
-                elif self.vel_y < 0:
+                    elif self.vel_y < 0:
 
-                    # UDERZENIE OD DOŁU
+                        # UDERZENIE OD DOŁU
 
-                    self.rect.top = platform.bottom
+                        self.rect.top = platform.bottom
 
-                    self.vel_y = 0
+                        self.vel_y = 0
 
-                self.pos.y = self.rect.centery
+                    self.pos.y = self.rect.centery
 
         # =================================================
         # ANIMACJA

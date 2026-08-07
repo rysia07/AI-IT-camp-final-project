@@ -269,12 +269,15 @@ while running:
             platform_mgr.platforms
         )
 
-        for obj in objects:
+        objects = [
+            Lever(300, 300, direction="left"),
+            CodePanel(500, 200),
+            ScoringButton(700, 400, 10),
+            LevelGate(900, 100)
+        ]
 
-            obj.update(
-                player,
-                ghost
-            )
+        for obj in objects:
+            obj.update(player, ghost)
 
     elif current_state == MENU:
 
@@ -323,6 +326,17 @@ while running:
         manager.draw_all(
             screen
         )
+        player.draw_hitbox(screen, "red")
+        ghost.draw_hitbox(screen, "cyan")
+        for obj in objects:
+            obj.draw(screen)
+
+            pygame.draw.rect(
+                screen,
+                "white",
+                obj.rect,
+                1
+            )
 
         # ---------------------------------------------
         # OBIEKTY
@@ -333,7 +347,6 @@ while running:
             obj.draw(
                 screen
             )
-
         # ---------------------------------------------
         # UI
         # ---------------------------------------------

@@ -29,67 +29,149 @@ class Interactive:
             2
         )
 
-
 class Lever(Interactive):
 
-    def __init__(self, x, y,w = 20, h =100, direction= "left"):
+    def __init__(self, x, y, w=100, h=20, direction="left"):
 
         super().__init__(
             x,
             y,
-            h,
-            w
+            w,
+            h
         )
 
         self.enabled = False
         self.direction = direction
+        self.enter_side = None
 
     def update(self, creature, ghost):
 
-        if self.enabled:
-            return
+        # ==========================================
+        # LEWO / PRAWO
+        # ==========================================
 
-        if not ghost.rect.colliderect(self.rect):
-            return
+        if self.direction in ("left", "right"):
 
-        # =========================
-        # WEJŚCIE OD LEWEJ
-        # =========================
+            # POPRZEDNIA pozycja hitboxa ducha
+            previous_left = ghost.last_pos.x - ghost.rect.width / 2
+            previous_right = ghost.last_pos.x + ghost.rect.width / 2
 
-        if self.direction == "left":
+            # OBECNA pozycja hitboxa ducha
+            current_left = ghost.rect.left
+            current_right = ghost.rect.right
 
-            if ghost.last_pos.x <= self.rect.left:
-                self.enabled = True
+            # ======================================
+            # NIE ROZPOCZĘTO PRZEJŚCIA
+            # ======================================
 
-        # =========================
-        # WEJŚCIE OD PRAWEJ
-        # =========================
+            if self.enter_side is None:
 
-        elif self.direction == "right":
+                # Duch wchodzi z lewej
+                if (
+                        previous_right <= self.rect.left
+                        and
+                        current_right > self.rect.left
+                ):
 
-            if ghost.last_pos.x >= self.rect.right:
-                self.enabled = True
+                    self.enter_side = "left"
 
-        # =========================
-        # WEJŚCIE OD GÓRY
-        # =========================
 
-        elif self.direction == "top":
+                # Duch wchodzi z prawej
+                elif (
+                        previous_left >= self.rect.right
+                        and
+                        current_left < self.rect.right
+                ):
 
-            if ghost.last_pos.y <= self.rect.top:
-                self.enabled = True
+                    self.enter_side = "right"
 
-        # =========================
-        # WEJŚCIE OD DOŁU
-        # =========================
 
-        elif self.direction == "bottom":
+            # ======================================
+            # WESZEDŁ Z LEWEJ
+            # ======================================
 
-            if ghost.last_pos.y >= self.rect.bottom:
-                self.enabled = True
+            elif self.enter_side == "left":
 
-        if self.enabled:
-            print("Dźwignia aktywowana!")
+                # Musi CAŁKOWICIE przejść za prawą krawędź
+                if current_left >= self.rect.right:
+                    self.enabled = not self.enabled
+                    self.enter_side = None
+
+
+            # ======================================
+            # WESZEDŁ Z PRAWEJ
+            # ======================================
+
+            elif self.enter_side == "right":
+
+                # Musi CAŁKOWICIE przejść za lewą krawędź
+                if current_right <= self.rect.left:
+                    self.enabled = not self.enabled
+                    self.enter_side = None
+
+
+        # ==========================================
+        # GÓRA / DÓŁ
+        # ==========================================
+
+        elif self.direction in ("top", "bottom"):
+
+            # POPRZEDNIA pozycja hitboxa ducha
+            previous_top = ghost.last_pos.y - ghost.rect.height / 2
+            previous_bottom = ghost.last_pos.y + ghost.rect.height / 2
+
+            # OBECNA pozycja hitboxa ducha
+            current_top = ghost.rect.top
+            current_bottom = ghost.rect.bottom
+
+            # ======================================
+            # NIE ROZPOCZĘTO PRZEJŚCIA
+            # ======================================
+
+            if self.enter_side is None:
+
+                # Duch wchodzi z góry
+                if (
+                        previous_bottom <= self.rect.top
+                        and
+                        current_bottom > self.rect.top
+                ):
+
+                    self.enter_side = "top"
+
+
+                # Duch wchodzi z dołu
+                elif (
+                        previous_top >= self.rect.bottom
+                        and
+                        current_top < self.rect.bottom
+                ):
+
+                    self.enter_side = "bottom"
+
+
+            # ======================================
+            # WESZEDŁ Z GÓRY
+            # ======================================
+
+            elif self.enter_side == "top":
+
+                # Musi CAŁKOWICIE przejść za dół
+                if current_top >= self.rect.bottom:
+                    self.enabled = not self.enabled
+                    self.enter_side = None
+
+
+            # ======================================
+            # WESZEDŁ Z DOŁU
+            # ======================================
+
+            elif self.enter_side == "bottom":
+
+                # Musi CAŁKOWICIE przejść za górę
+                if current_bottom <= self.rect.top:
+                    self.enabled = not self.enabled
+                    self.enter_side = None
 
     def draw(self, surface):
 
