@@ -43,8 +43,9 @@ class MainMenu:
         center_x = width // 2 - button_width // 2
         
         self.start_button = Button(center_x, height // 2 - 80, button_width, button_height, "START GAME")
-        self.quit_button = Button(center_x, height // 2 + 40, button_width, button_height, "QUIT")
-        self.buttons = [self.start_button, self.quit_button]
+        self.options_button = Button(center_x, height // 2 + 0, button_width, button_height, "OPTIONS")
+        self.quit_button = Button(center_x, height // 2 + 80, button_width, button_height, "QUIT")
+        self.buttons = [self.start_button, self.options_button, self.quit_button]
     
     def handle_input(self):
         """Handle menu input and return action"""
@@ -57,6 +58,9 @@ class MainMenu:
                 if button == self.start_button:
                     self.active = False
                     return "start"
+                elif button == self.options_button:
+                    self.active = False
+                    return "options"
                 elif button == self.quit_button:
                     return "quit"
         

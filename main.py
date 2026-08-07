@@ -10,6 +10,8 @@ from Interactive import (
 )
 from GUI import MainMenu
 from Platforms import PlatformManager
+from options_menu import OptionsMenu
+from credits_menu import CreditsMenu
 
 
 # =========================================================
@@ -158,10 +160,20 @@ objects = [
 
 MENU = 0
 PLAYING = 1
+OPTIONS = 2
+CREDITS = 3
 
 current_state = MENU
 
 menu = MainMenu(
+    WIDTH,
+    HEIGHT
+)
+options_menu = OptionsMenu(
+    WIDTH,
+    HEIGHT
+)
+credits_menu = CreditsMenu(
     WIDTH,
     HEIGHT
 )
@@ -205,6 +217,10 @@ while running:
 
         ):
             pygame.mouse.set_visible(True)
+            if current_state == OPTIONS:
+                options_menu.active = False
+            elif current_state == CREDITS:
+                credits_menu.active = False
             current_state = MENU
 
         # =================================================
@@ -253,16 +269,40 @@ while running:
                     running = False
 
                 elif clicked == "options":
-
-                    print(
-                        "Options pressed"
-                    )
+                    options_menu.active = True
+                    current_state = OPTIONS
+                    pygame.mouse.set_visible(True)
 
                 elif clicked == "credits":
+                    credits_menu.active = True
+                    current_state = CREDITS
+                    pygame.mouse.set_visible(True)
 
-                    print(
-                        "Credits pressed"
-                    )
+        elif current_state == OPTIONS:
+
+            if (
+                event.type == pygame.MOUSEBUTTONDOWN
+                and event.button == 1
+            ):
+
+                action = options_menu.handle_input()
+
+                if action == "back":
+                    options_menu.active = False
+                    current_state = MENU
+
+        elif current_state == CREDITS:
+
+            if (
+                event.type == pygame.MOUSEBUTTONDOWN
+                and event.button == 1
+            ):
+
+                action = credits_menu.handle_input()
+
+                if action == "back":
+                    credits_menu.active = False
+                    current_state = MENU
 
     # =====================================================
     # UPDATE
@@ -288,6 +328,18 @@ while running:
             mouse_pos
         )
 
+    elif current_state == OPTIONS:
+
+        options_menu.update(
+            mouse_pos
+        )
+
+    elif current_state == CREDITS:
+
+        credits_menu.update(
+            mouse_pos
+        )
+
     # =====================================================
     # DRAW
     # =====================================================
@@ -303,6 +355,18 @@ while running:
     if current_state == MENU:
 
         menu.draw(
+            screen
+        )
+
+    elif current_state == OPTIONS:
+
+        options_menu.draw(
+            screen
+        )
+
+    elif current_state == CREDITS:
+
+        credits_menu.draw(
             screen
         )
 
