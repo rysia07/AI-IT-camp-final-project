@@ -1,7 +1,7 @@
 # Level file format: x y width height name
 # Colors are random!
 
-p 500 500
+p 250 245
 
 # Ground platform
 50 500 800 50 ground
@@ -11,7 +11,7 @@ p 500 500
 500 300 150 50 platform2
 300 250 80 40 platform3
 
-333 333 333 333 platform4
+
 
 # Walls
 10 100 20 500 wall_left

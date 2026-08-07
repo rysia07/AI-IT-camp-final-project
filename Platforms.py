@@ -1,4 +1,7 @@
 import pygame
+import LoadLevels
+
+
 
 class PlatformManager:
     def __init__(self, texture_path):
@@ -9,22 +12,20 @@ class PlatformManager:
             self.raw_image = pygame.Surface((50, 50))
             self.raw_image.fill((139, 69, 19))
 
-        # Definicja podłogi i platform
-        self.floor = pygame.Rect(0, 550, 900, 50)
-        self.platforms = [
-            self.floor,
-            pygame.Rect(300, 500, 200, 20),
-            pygame.Rect(600, 380, 200, 20),
-            pygame.Rect(900, 250, 200, 20)
-        ]
+        # pobieranie rectów z Loadlevels.py
+        manager, player_pos = LoadLevels.load_rects_from_file("level.txt")
+
+        self.platforms = manager.get_rects()
+        self.player_pos = player_pos
+        print(self.player_pos)
 
         # Przygotowanie skalowanych tekstur
-        self.floor_texture = pygame.transform.scale(self.raw_image, self.floor.size)
+
         self.platform_texture = pygame.transform.scale(self.raw_image, (200, 20))
 
     def draw(self, surface):
         # Rysowanie podłogi
-        surface.blit(self.floor_texture, self.floor)
+
         # Rysowanie pozostałych platform
         for platform in self.platforms[1:]:
             surface.blit(self.platform_texture, platform)
