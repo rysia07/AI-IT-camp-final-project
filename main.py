@@ -4,7 +4,7 @@ import pygame
 from Characters import Creature, CharacterManager
 from GUI import MainMenu
 from Platforms import PlatformManager
-
+platform_mgr = PlatformManager("kievinay-train-6558870_1920.png")
 # ============= INITIALIZATION =============
 pygame.init()
 WIDTH, HEIGHT = 900, 600
@@ -69,17 +69,8 @@ while running:
 
     # ========== UPDATE ==========
     if current_state == PLAYING:
-        # moved input handling from original main
-        keys = pygame.key.get_pressed()
-        if keys[pygame.K_a]:
-            player.move(-player.speed * dt, 0)
-        if keys[pygame.K_d]:
-            player.move(player.speed * dt, 0)
-        if keys[pygame.K_w]:
-            player.jump()
-        player.apply_gravity(dt, fast_fall=keys[pygame.K_s])
 
-        manager.update_all(dt, platforms)
+        manager.update_all(dt, platform_mgr.platforms)
 
     elif current_state == MENU:
         menu.update(mouse_pos)
@@ -93,8 +84,8 @@ while running:
 
     elif current_state == PLAYING:
         # Draw platforms
-        for platform in platforms:
-            pygame.draw.rect(screen, (100, 200, 100), platform)
+        for platform in platform_mgr.platforms:
+            platform_mgr.draw(screen)
 
         # Draw player (sprite or fallback)
         if player.sprite and player.sprite.current:
