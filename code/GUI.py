@@ -34,9 +34,9 @@ class MainMenu:
 
         button_width = 200
         button_height = 80
-        start_x = 100
-        start_y = 200
-        spacing = 120
+        start_x = 50
+        start_y = 50
+        spacing = 125
 
         self.buttons = {
             'play': Button(start_x, start_y, button_width, button_height, "Play"),

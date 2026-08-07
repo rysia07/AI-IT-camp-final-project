@@ -192,44 +192,48 @@ class CodePanel(Interactive):
             text_rect = text_surf.get_rect(center=popup_rect.center)
             surface.blit(text_surf, text_rect)
 
+
 class ScoringButton(Interactive):
 
-    def __init__(self, x, y, required_power):
-
-        super().__init__(
-            x,
-            y,
-            80,
-            20
-        )
+    def __init__(self, x, y, required_power=0):
+        super().__init__(x, y, 80, 20)
 
         self.required_power = required_power
         self.points = 100
         self.used = False
 
     def update(self, creature, ghost):
-
-        if self.used:
-            return
-
+        # Sprawdzamy kolizję hitboksu gracza z przyciskiem
         if creature.rect.colliderect(self.rect):
 
-            if creature.power >= self.required_power:
+            # ==========================================
+            # 1. LOGIKA PRZYZNAWANIA PUNKTÓW
+            # ==========================================
+            if not self.used and creature.power >= self.required_power:
+                # Jeśli gracz ma zmienną score w klasie, dodajemy punkty
+                if hasattr(creature, 'score'):
+                    creature.score += self.points
 
-                print("+", self.points, "pkt")
-
+                print(f"+ {self.points} pkt!")
                 self.used = True
 
-    def draw(self, surface):
+            # ==========================================
+            # 2. FIZYCZNA KOLIZJA (Gracz staje na przycisku)
+            # ==========================================
+            # Jeśli gracz opada na przycisk z góry
+            if creature.vel_y > 0 and creature.rect.bottom <= self.rect.top + 15:
+                creature.rect.bottom = self.rect.top
+                creature.vel_y = 0
+                creature.is_grounded = True
+                creature.pos.y = creature.rect.centery
 
+    def draw(self, surface):
         color = "gray" if self.used else "yellow"
 
-        pygame.draw.rect(
-            surface,
-            color,
-            self.rect
-        )
-
+        # Rysujemy sam przycisk
+        pygame.draw.rect(surface, color, self.rect)
+        # Rysujemy delikatną czarną ramkę wokół niego
+        pygame.draw.rect(surface, "black", self.rect, 2)
 
 class LevelGate(Interactive):
 
