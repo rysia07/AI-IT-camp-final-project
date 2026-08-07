@@ -290,7 +290,7 @@ class CharacterManager:
             if isinstance(character, Creature) and platforms:
                 character.update(dt, platforms)
             else:
-                character.update(dt)
+                character.update(dt, platforms)
 
     def draw_all(self, surface):
         for character in self.characters.values():

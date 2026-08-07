@@ -1,13 +1,13 @@
 import pygame
-
+okno = pygame.display.set_mode((900, 600))
 class PlatformManager:
     def __init__(self, texture_path):
         # Ładowanie i zabezpieczenie tekstury
         try:
-            self.raw_image = pygame.image.load(texture_path).convert_alpha()
+             self.raw_image = pygame.image.load(texture_path).convert_alpha()
         except pygame.error:
-            self.raw_image = pygame.Surface((50, 50))
-            self.raw_image.fill((139, 69, 19))
+             self.raw_image = pygame.Surface((50, 50))
+             self.raw_image.fill((255, 0, 0))
 
         # Definicja podłogi i platform
         self.floor = pygame.Rect(0, 550, 900, 50)
