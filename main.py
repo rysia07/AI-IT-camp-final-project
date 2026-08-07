@@ -8,7 +8,7 @@ from Platforms import PlatformManager
 # ============= INITIALIZATION =============
 pygame.init()
 WIDTH, HEIGHT = 900, 600
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
+screen = pygame.display.set_mode((WIDTH, HEIGHT) , pygame.FULLSCREEN)
 pygame.display.set_caption("Game - ludzik.png with Animations")
 clock = pygame.time.Clock()
 
