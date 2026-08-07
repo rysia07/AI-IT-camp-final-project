@@ -32,31 +32,64 @@ class Interactive:
 
 class Lever(Interactive):
 
-    def __init__(self, x, y):
+    def __init__(self, x, y,w = 20, h =100, direction= "left"):
 
         super().__init__(
             x,
             y,
-            40,
-            60
+            h,
+            w
         )
 
         self.enabled = False
-
-    def handle_event(self, event):
-
-        if event.type == pygame.KEYDOWN:
-
-            if event.key == pygame.K_e:
-
-                self.enabled = not self.enabled
+        self.direction = direction
 
     def update(self, creature, ghost):
 
-        # Duch musi być przy dźwigni
-        if not ghost.rect.colliderect(self.rect):
-
+        if self.enabled:
             return
+
+        if not ghost.rect.colliderect(self.rect):
+            return
+
+        # =========================
+        # WEJŚCIE OD LEWEJ
+        # =========================
+
+        if self.direction == "left":
+
+            if ghost.last_pos.x <= self.rect.left:
+                self.enabled = True
+
+        # =========================
+        # WEJŚCIE OD PRAWEJ
+        # =========================
+
+        elif self.direction == "right":
+
+            if ghost.last_pos.x >= self.rect.right:
+                self.enabled = True
+
+        # =========================
+        # WEJŚCIE OD GÓRY
+        # =========================
+
+        elif self.direction == "top":
+
+            if ghost.last_pos.y <= self.rect.top:
+                self.enabled = True
+
+        # =========================
+        # WEJŚCIE OD DOŁU
+        # =========================
+
+        elif self.direction == "bottom":
+
+            if ghost.last_pos.y >= self.rect.bottom:
+                self.enabled = True
+
+        if self.enabled:
+            print("Dźwignia aktywowana!")
 
     def draw(self, surface):
 
@@ -67,7 +100,6 @@ class Lever(Interactive):
             color,
             self.rect
         )
-
 
 class CodePanel(Interactive):
 

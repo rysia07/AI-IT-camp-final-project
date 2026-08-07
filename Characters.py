@@ -339,19 +339,18 @@ class GhostMouse(Character):
 
         self.hp = 50
 
+
     def update(self, dt):
 
-        mouse_x, mouse_y = pygame.mouse.get_pos()
+        self.last_pos = self.pos.copy()
 
         self.pos = pygame.Vector2(
-            mouse_x,
-            mouse_y
+            pygame.mouse.get_pos()
         )
 
         super().update(
             int(dt * 1000)
         )
-
 
 # =========================================================
 # CHARACTER MANAGER
