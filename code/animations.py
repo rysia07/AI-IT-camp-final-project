@@ -236,7 +236,7 @@ if __name__ == "__main__":
 
     mgr = ObjectManager()
 
-    player = SpriteObject('player', 'ludzik.png', x=100, y=100)
+    player = SpriteObject('player', '../ludzik.png', x=100, y=100)
     # MUST supply indices now (required)
     player.add_frames('walk', indices=[0,1,2,3,4,5], cols=3, rows=3, frame_duration=150, loop=True)
     player.add_frames('attack', indices=[6,7,8], cols=3, rows=3, frame_duration=300, loop=False)
