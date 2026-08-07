@@ -152,6 +152,8 @@ objects = [
 
 MENU = 0
 PLAYING = 1
+OPTIONS = 2
+CREDITS = 3
 
 current_state = MENU
 
