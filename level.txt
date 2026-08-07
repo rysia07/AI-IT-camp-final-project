@@ -1,8 +1,7 @@
 # Level file format: x y width height name
 # Colors are random!
 
-p 250 245
-
+p 0 0
 # Ground platform
 50 500 800 50 ground
 
