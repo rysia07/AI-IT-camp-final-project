@@ -32,9 +32,12 @@ platform_manager = PlatformManager(
 
 manager = CharacterManager()
 
+player_pos_x , player_pos_y= platform_manager.player_pos
+
+
 player = Creature(
-    450,
-    300,
+    player_pos_x,
+    player_pos_y,
     spritesheet_path="ludzik.png"
 )
 

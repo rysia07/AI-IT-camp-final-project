@@ -17,7 +17,7 @@ class PlatformManager:
 
         self.platforms = manager.get_rects()
         self.player_pos = player_pos
-        print(self.player_pos)
+
 
         # Przygotowanie skalowanych tekstur
 
