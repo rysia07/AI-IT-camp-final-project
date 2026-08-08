@@ -22,7 +22,7 @@ pygame.init()
 WIDTH, HEIGHT = 900, 600
 
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Game - ludzik.png with Animations")
+pygame.display.set_caption("Placeholder")
 
 clock = pygame.time.Clock()
 
