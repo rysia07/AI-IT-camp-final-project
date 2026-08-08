@@ -63,19 +63,16 @@ class MainMenu:
         }
 
     def update(self, mouse_pos):
-        """Aktualizuje stan przycisków w menu."""
         for button in self.buttons.values():
             button.update(mouse_pos)
 
     def handle_click(self, mouse_pos, mouse_pressed):
-        """Obsługuje kliknięcia w menu i zwraca nazwę akcji."""
         for name, button in self.buttons.items():
             if button.is_clicked(mouse_pos, mouse_pressed):
                 return name
         return None
 
     def draw(self, screen):
-        """Rysuje menu główne."""
         title = self.title_font.render("MAIN MENU", True, (255, 200, 50))
         screen.blit(title, (50, 50))
 
@@ -84,7 +81,7 @@ class MainMenu:
 
 
 class OptionsMenu:
-    """Ekran opcji z ustawieniami głośności i sterowania."""
+    """Ekran opcji."""
     def __init__(self, screen_width: int, screen_height: int):
         self.width = screen_width
         self.height = screen_height
@@ -159,7 +156,7 @@ class OptionsMenu:
 
 
 class CreditsMenu:
-    """Ekran twórców gry."""
+    """Ekran twórców."""
     def __init__(self, screen_width: int, screen_height: int):
         self.width = screen_width
         self.height = screen_height
@@ -202,24 +199,21 @@ class CreditsMenu:
             button.draw(surface, self.font)
 
 
-class PauseMenu:
-    """Menu pauzy nakładane na aktualny stan gry."""
+class FailureMenu:
+    """Ekran przegranej (porażki)."""
     def __init__(self, screen_width: int, screen_height: int):
         self.width = screen_width
         self.height = screen_height
-        self.active = False
-        self.font = pygame.font.Font(None, 36)
+        self.font = pygame.font.Font(None, 40)
+        self.title_font = pygame.font.Font(None, 80)
 
-        button_width = 200
-        button_height = 50
+        button_width = 220
+        button_height = 60
         center_x = screen_width // 2 - button_width // 2
 
-        self.resume_button = Button(center_x, screen_height // 2 - 40, button_width, button_height, "RESUME")
-        self.quit_button = Button(center_x, screen_height // 2 + 30, button_width, button_height, "MENU")
-        self.buttons = [self.resume_button, self.quit_button]
-
-    def toggle(self):
-        self.active = not self.active
+        self.retry_button = Button(center_x, screen_height // 2 + 10, button_width, button_height, "RETRY")
+        self.menu_button = Button(center_x, screen_height // 2 + 90, button_width, button_height, "MAIN MENU")
+        self.buttons = [self.retry_button, self.menu_button]
 
     def update(self, mouse_pos):
         for button in self.buttons:
@@ -228,27 +222,57 @@ class PauseMenu:
     def handle_input(self, mouse_pos, mouse_pressed):
         for button in self.buttons:
             if button.is_clicked(mouse_pos, mouse_pressed):
-                if button == self.resume_button:
-                    self.active = False
-                    return "resume"
-                elif button == self.quit_button:
-                    self.active = False
+                if button == self.retry_button:
+                    return "retry"
+                elif button == self.menu_button:
                     return "menu"
         return None
 
     def draw(self, surface):
-        if not self.active:
-            return
+        surface.fill((40, 10, 10))  # Ciemnoczerwone tło
 
-        # Przyciemnienie tła gry
-        overlay = pygame.Surface((self.width, self.height))
-        overlay.set_alpha(180)
-        overlay.fill((0, 0, 0))
-        surface.blit(overlay, (0, 0))
+        title = self.title_font.render("GAME OVER", True, (255, 50, 50))
+        title_rect = title.get_rect(center=(self.width // 2, self.height // 3))
+        surface.blit(title, title_rect)
 
-        font_large = pygame.font.Font(None, 64)
-        title = font_large.render("PAUSED", True, (255, 255, 255))
-        title_rect = title.get_rect(center=(self.width // 2, self.height // 4))
+        for button in self.buttons:
+            button.draw(surface, self.font)
+
+
+class VictoryMenu:
+    """Ekran wygranej (sukcesu)."""
+    def __init__(self, screen_width: int, screen_height: int):
+        self.width = screen_width
+        self.height = screen_height
+        self.font = pygame.font.Font(None, 40)
+        self.title_font = pygame.font.Font(None, 80)
+
+        button_width = 220
+        button_height = 60
+        center_x = screen_width // 2 - button_width // 2
+
+        self.next_button = Button(center_x, screen_height // 2 + 10, button_width, button_height, "NEXT LEVEL")
+        self.menu_button = Button(center_x, screen_height // 2 + 90, button_width, button_height, "MAIN MENU")
+        self.buttons = [self.next_button, self.menu_button]
+
+    def update(self, mouse_pos):
+        for button in self.buttons:
+            button.update(mouse_pos)
+
+    def handle_input(self, mouse_pos, mouse_pressed):
+        for button in self.buttons:
+            if button.is_clicked(mouse_pos, mouse_pressed):
+                if button == self.next_button:
+                    return "next"
+                elif button == self.menu_button:
+                    return "menu"
+        return None
+
+    def draw(self, surface):
+        surface.fill((10, 40, 10))  # Ciemnozielone tło
+
+        title = self.title_font.render("VICTORY!", True, (50, 255, 50))
+        title_rect = title.get_rect(center=(self.width // 2, self.height // 3))
         surface.blit(title, title_rect)
 
         for button in self.buttons:

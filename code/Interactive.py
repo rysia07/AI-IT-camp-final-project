@@ -22,41 +22,55 @@ class Lever(Interactive):
     def __init__(self, x, y, w=100, h=20, direction="left"):
         super().__init__(x, y, w, h)
         self.enabled = False
-        self.direction = direction
+        self.direction = direction  # "left", "right", "top", "bottom"
         self.enter_side = None
 
     def update(self, creature, ghost):
         prev_x, prev_y = ghost.last_pos.x, ghost.last_pos.y
         curr_x, curr_y = ghost.pos.x, ghost.pos.y
 
+        # =========================================================
+        # RUCH POZIOMY (Przecinanie z lewej na prawą lub z prawej na lewą)
+        # =========================================================
         if self.direction in ("left", "right"):
-            if self.rect.top <= curr_y <= self.rect.bottom:
+            y_in_bounds = self.rect.top <= curr_y <= self.rect.bottom or self.rect.top <= prev_y <= self.rect.bottom
+
+            if y_in_bounds:
                 if self.enter_side is None:
-                    if prev_x <= self.rect.left and curr_x > self.rect.left:
+                    if prev_x <= self.rect.left < curr_x:
                         self.enter_side = "left"
-                    elif prev_x >= self.rect.right and curr_x < self.rect.right:
+                    elif prev_x >= self.rect.right > curr_x:
                         self.enter_side = "right"
+
                 elif self.enter_side == "left" and curr_x >= self.rect.right:
-                    self.enabled = (self.direction == "left")
-                    self.enter_side = None
-                elif self.enter_side == "right" and curr_x <= self.rect.left:
                     self.enabled = (self.direction == "right")
+                    self.enter_side = None
+
+                elif self.enter_side == "right" and curr_x <= self.rect.left:
+                    self.enabled = (self.direction == "left")
                     self.enter_side = None
             else:
                 self.enter_side = None
 
+        # =========================================================
+        # RUCH PIONOWY (Przecinanie z góry do dołu lub z dołu do góry)
+        # =========================================================
         elif self.direction in ("top", "bottom"):
-            if self.rect.left <= curr_x <= self.rect.right:
+            x_in_bounds = self.rect.left <= curr_x <= self.rect.right or self.rect.left <= prev_x <= self.rect.right
+
+            if x_in_bounds:
                 if self.enter_side is None:
-                    if prev_y <= self.rect.top and curr_y > self.rect.top:
+                    if prev_y <= self.rect.top < curr_y:
                         self.enter_side = "top"
-                    elif prev_y >= self.rect.bottom and curr_y < self.rect.bottom:
+                    elif prev_y >= self.rect.bottom > curr_y:
                         self.enter_side = "bottom"
+
                 elif self.enter_side == "top" and curr_y >= self.rect.bottom:
-                    self.enabled = (self.direction == "top")
-                    self.enter_side = None
-                elif self.enter_side == "bottom" and curr_y <= self.rect.top:
                     self.enabled = (self.direction == "bottom")
+                    self.enter_side = None
+
+                elif self.enter_side == "bottom" and curr_y <= self.rect.top:
+                    self.enabled = (self.direction == "top")
                     self.enter_side = None
             else:
                 self.enter_side = None
@@ -115,7 +129,7 @@ class CodePanel(Interactive):
 
         if self.is_open:
             popup_rect = pygame.Rect(self.rect.x - 30, self.rect.y - 70, 120, 50)
-            pygame.draw.rect(surface, (40, 40, 40), popup_rect)  # Bez ramki
+            pygame.draw.rect(surface, (40, 40, 40), popup_rect)
 
             font = pygame.font.Font(None, 32)
             display_text = self.current + "_" * (len(self.code) - len(self.current))
@@ -127,23 +141,21 @@ class CodePanel(Interactive):
 class ScoringButton(Interactive):
     def __init__(self, x, y, required_power=1):
         super().__init__(x, y, 80, 20)
-        self.required_power = required_power  # Wymagane power > 0 (domyślnie 1)
+        self.required_power = required_power
         self.points = 100
         self.used = False
         self.color = (241, 196, 15)  # Żółty placeholder
 
     def update(self, creature, ghost):
         if creature.rect.colliderect(self.rect):
-            # 1. WERYFIKACJA POWER I PRZYZNANIE PUNKTÓW
             current_power = getattr(creature, 'power', 0)
             if not self.used and current_power >= self.required_power:
                 if hasattr(creature, 'score'):
                     creature.score += self.points
                 print(f"+ {self.points} pkt! Power wynosił: {current_power}")
                 self.used = True
-                self.color = (127, 140, 141)  # Ciemnoszary po aktywacji
+                self.color = (127, 140, 141)
 
-            # 2. KOLIZJA FIZYCZNA I ODNOWIENIE SKOKÓW
             overlap_left = creature.rect.right - self.rect.left
             overlap_right = self.rect.right - creature.rect.left
             overlap_top = creature.rect.bottom - self.rect.top
@@ -179,7 +191,7 @@ class Door(Interactive):
         super().__init__(x, y, w, h)
         self.is_open = False
         self.trigger_object = trigger_object
-        self.color = (139, 69, 19)  # Brązowy placeholder
+        self.color = (139, 69, 19)
 
     def update(self, creature, ghost):
         if self.trigger_object:
@@ -224,7 +236,7 @@ class LevelGate(Interactive):
     def __init__(self, x, y):
         super().__init__(x, y, 100, 120)
         self.triggered = False
-        self.color = (142, 68, 173)  # Fioletowy placeholder
+        self.color = (142, 68, 173)
 
     def update(self, creature, ghost):
         if self.triggered:
