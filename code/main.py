@@ -1,5 +1,7 @@
 import sys
 import pygame
+from LoadLevels import load_level
+
 
 # Importujemy wszystkie potrzebne klasy z pliku Interactive.py
 from Interactive import (
@@ -38,7 +40,15 @@ pygame.event.set_grab(True)
 # PLATFORMY
 # =========================================================
 
-platform_mgr = PlatformManager("../pictures/kievinay-train-6558870_1920.png")
+level = load_level("../levels/level.txt")
+
+platform_mgr = PlatformManager(
+    "../pictures/platforma.png",
+    level.platforms
+)
+
+interactive_manager = level.interactive_manager
+
 
 # =========================================================
 # CHARACTERS
@@ -47,10 +57,11 @@ platform_mgr = PlatformManager("../pictures/kievinay-train-6558870_1920.png")
 manager = CharacterManager()
 
 player = Creature(
-    450,
-    300,
+    level.player_pos[0],
+    level.player_pos[1],
     "../pictures/ludzik.png"
 )
+
 
 player.add_anim(
     "idle",
@@ -104,6 +115,7 @@ interactive_manager = InteractiveManager()
 # Dodajemy obiekty bezpośrednio do menedżeralever =
 
 lever = Lever(300, 300, 100, 20, direction="left")
+
 door = Door(700, 250, 30, 120, trigger_object=lever) # Drzwi otwierają się dźwignią!
 
 interactive_manager.add(lever)
@@ -176,13 +188,19 @@ while running:
     # =====================================================
 
     if current_state == PLAYING:
-        # 1. Aktualizacja fizyki postaci i platform
-        manager.update_all(dt, platform_mgr.platforms)
 
-        # 2. Aktualizacja obiektów interaktywnych
-        interactive_manager.update_all(player, ghost)
+        manager.update_all(
+            dt,
+            platform_mgr.platforms
+        )
+
+        interactive_manager.update_all(
+            player,
+            ghost
+        )
 
         pygame.event.set_grab(True)
+
 
     elif current_state == MENU:
         menu.update(mouse_pos)
@@ -197,10 +215,24 @@ while running:
     if current_state == MENU:
         menu.draw(screen)
 
+
     elif current_state == PLAYING:
-        # Platformy
-        for platform in platform_mgr.platforms:
-            platform_mgr.draw(screen)
+
+        # Platforms
+
+        platform_mgr.draw(screen)
+
+        # Levers, doors, panels, etc.
+
+        interactive_manager.draw_all(screen)
+
+        # Characters
+
+        manager.draw_all(screen)
+
+        player.draw_hitbox(screen, "red")
+
+        ghost.draw_hitbox(screen, "cyan")
 
         # Obiekty interaktywne
         interactive_manager.draw_all(screen)
