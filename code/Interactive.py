@@ -32,7 +32,7 @@ class Interactive:
 
 class Lever(Interactive):
 
-    def __init__(self, x, y, w=100, h=20, direction="left"):
+    def __init__(self, x, y, w, h, direction="left"):
         super().__init__(x, y, w, h)
         self.enabled = False
         self.direction = direction  # "left", "right", "top", lub "bottom"
@@ -254,7 +254,7 @@ class ScoringButton(Interactive):
 
 class Door(Interactive):
 
-    def __init__(self, x, y, w=30, h=120, trigger_object=None):
+    def __init__(self, x, y, w, h, trigger_object=None):
         super().__init__(x, y, w, h)
         self.is_open = False
         self.trigger_object = trigger_object  # Obiekt, który otwiera drzwi (np. Lever lub CodePanel)
