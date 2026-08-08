@@ -30,7 +30,7 @@ class Character:
         # =====================
         # ANIMACJE
         # =====================
-
+        self.spritesheet_path = spritesheet_path
         self.sprite = None
 
         if spritesheet_path:
@@ -57,25 +57,30 @@ class Character:
     # =====================
 
     def add_anim(
-        self,
-        name,
-        frames,
-        cols,
-        rows,
-        speed=100,
-        loop=True,
-        priority=0
-    ):
-        if not self.sprite:
-            raise ValueError("Brak spritesheet_path")
-
-        self.sprite.add_frames(
+            self,
             name,
             frames,
             cols,
             rows,
-            speed,
-            loop
+            speed=100,
+            loop=True,
+            priority=0,
+            spritesheet_path=None,
+            scale=1.0
+    ):
+
+        if not self.sprite:
+            raise ValueError("Brak spritesheet_path")
+
+        self.sprite.add_frames(
+            name=name,
+            indices=frames,
+            cols=cols,
+            rows=rows,
+            frame_duration=speed,
+            loop=loop,
+            spritesheet_path=spritesheet_path,
+            scale=scale
         )
 
         self.anim_priority[name] = priority
