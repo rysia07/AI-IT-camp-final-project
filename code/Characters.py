@@ -127,8 +127,8 @@ class Creature(Character):
         self.hp = 100
         self.power = 0
         self.speed = 200
-        self.gravity = 1000
-        self.jump_force = -500
+        self.gravity = 2000
+        self.jump_force = -1000
         self.vel_y = 0
         self.is_grounded = False
 

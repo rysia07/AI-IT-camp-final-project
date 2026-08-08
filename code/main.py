@@ -12,7 +12,7 @@ from Interactive import (
 )
 from Platforms import PlatformManager
 from Characters import Creature, GhostMouse, CharacterManager
-from GUI import MainMenu
+from GUI import MainMenu, CreditsMenu, OptionsMenu
 # =========================================================
 # INITIALIZATION
 # =========================================================
@@ -115,7 +115,7 @@ interactive_manager.add(LevelGate(800, 400))
 # =========================================================
 # MENU / GAME STATE
 # =========================================================
-
+# Zamiast samych stałych dodaj obiekty menu:
 MENU = 0
 PLAYING = 1
 OPTIONS = 2
@@ -123,6 +123,8 @@ CREDITS = 3
 
 current_state = MENU
 menu = MainMenu(WIDTH, HEIGHT)
+options_menu = OptionsMenu(WIDTH, HEIGHT)
+credits_menu = CreditsMenu(WIDTH, HEIGHT)
 
 # =========================================================
 # GAME LOOP
@@ -142,55 +144,72 @@ while running:
         if event.type == pygame.QUIT:
             running = False
 
-        if current_state == PLAYING:
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_w:
-                    player.jump()
-
-                if event.key == pygame.K_2:
-                    player.play("attack")
-
-                if event.key == pygame.K_ESCAPE:
+        # OBSŁUGA KLAWISZA ESC DO POWROTU Z OPTIONS / CREDITS
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_ESCAPE:
+                if current_state in (OPTIONS, CREDITS):
+                    current_state = MENU
+                elif current_state == PLAYING:
                     current_state = MENU
                     pygame.mouse.set_visible(True)
 
-            interactive_manager.handle_event_all(event)
-
-        elif current_state == MENU:
-            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+        # OBSŁUGA KLIKNIĘĆ W MENU
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            if current_state == MENU:
                 clicked = menu.handle_click(event.pos, (1, 0, 0))
 
                 if clicked == "play":
                     pygame.mouse.set_visible(False)
                     current_state = PLAYING
+                elif clicked == "options":
+                    current_state = OPTIONS
+                elif clicked == "credits":
+                    current_state = CREDITS
                 elif clicked == "quit":
                     running = False
+
+            elif current_state == OPTIONS:
+                action = options_menu.handle_input(event.pos, (1, 0, 0))
+                if action == "back":
+                    current_state = MENU
+
+            elif current_state == CREDITS:
+                action = credits_menu.handle_input(event.pos, (1, 0, 0))
+                if action == "back":
+                    current_state = MENU
 
     # =====================================================
     # UPDATE
     # =====================================================
 
     if current_state == PLAYING:
-        # Jedno poprawne wywołanie update_all dla wszystkich postaci z przekazaniem platform
         manager.update_all(dt, platform_mgr.platforms)
-
-        # Aktualizacja interakcji
         interactive_manager.update_all(player, ghost)
-
         pygame.event.set_grab(True)
-
-    elif current_state == MENU:
-        menu.update(mouse_pos)
+    else:
         pygame.event.set_grab(False)
+        if current_state == MENU:
+            menu.update(mouse_pos)
+        elif current_state == OPTIONS:
+            options_menu.update(mouse_pos)
+        elif current_state == CREDITS:
+            credits_menu.update(mouse_pos)
 
     # =====================================================
     # DRAW
     # =====================================================
 
     screen.fill((30, 30, 30))
+    screen.fill((30, 30, 30))
 
     if current_state == MENU:
         menu.draw(screen)
+
+    elif current_state == OPTIONS:
+        options_menu.draw(screen)
+
+    elif current_state == CREDITS:
+        credits_menu.draw(screen)
 
     elif current_state == PLAYING:
         platform_mgr.draw(screen)
