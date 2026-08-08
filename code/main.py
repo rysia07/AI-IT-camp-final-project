@@ -2,18 +2,20 @@ import sys
 import pygame
 from LoadLevels import load_level
 
-
-
-from Characters import Creature, GhostMouse, CharacterManager
-from GUI import MainMenu
-from Platforms import PlatformManager
+from Interactive import (
+    Lever,
+    CodePanel,
+    ScoringButton,
+    Door,
+    LevelGate,
+    InteractiveManager
+)
 
 # =========================================================
 # INITIALIZATION
 # =========================================================
 
 FPS = 60
-
 
 pygame.init()
 
@@ -25,9 +27,7 @@ pygame.display.set_caption("Placeholder")
 
 clock = pygame.time.Clock()
 
-# Przywracamy normalny kursor
 pygame.mouse.set_visible(True)
-pygame.event.set_grab(True)
 
 # =========================================================
 # PLATFORMY
@@ -40,9 +40,6 @@ platform_mgr = PlatformManager(
     level.platforms
 )
 
-interactive_manager = level.interactive_manager
-
-
 # =========================================================
 # CHARACTERS
 # =========================================================
@@ -54,7 +51,6 @@ player = Creature(
     level.player_pos[1],
     "../pictures/ludzik.png"
 )
-
 
 player.add_anim(
     "idle",
@@ -90,7 +86,6 @@ player.add_anim(
     scale=0.5
 )
 
-
 player.set_walk_idle("walk", "idle")
 player.play("idle")
 
@@ -105,10 +100,14 @@ manager.add("ghost", ghost)
 
 
 
-# Dodajemy obiekty bezpośrednio do menedżeralever =
+lever = Lever(300, 300, 100, 20, direction="left")
+door = Door(700, 250, 30, 120, trigger_object=lever)
 
-
-
+interactive_manager.add(lever)
+interactive_manager.add(door)
+interactive_manager.add(CodePanel(700, 300, code="1234"))
+interactive_manager.add(ScoringButton(490, 490, required_power=3))
+interactive_manager.add(LevelGate(800, 400))
 
 # =========================================================
 # MENU / GAME STATE
@@ -129,7 +128,6 @@ menu = MainMenu(WIDTH, HEIGHT)
 running = True
 
 while running:
-
     dt = clock.tick(FPS) / 1000.0
     events = pygame.event.get()
     mouse_pos = pygame.mouse.get_pos()
@@ -142,9 +140,8 @@ while running:
             running = False
 
         if current_state == PLAYING:
-            # Obsługa pojedynczych wciśnięć klawiszy (KEYDOWN)
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_w:  # Lub K_SPACE
+                if event.key == pygame.K_w:
                     player.jump()
 
                 if event.key == pygame.K_2:
@@ -153,10 +150,9 @@ while running:
                 if event.key == pygame.K_ESCAPE:
                     current_state = MENU
                     pygame.mouse.set_visible(True)
-            # Przekazujemy zdarzenia klawiatury do obiektów (np. do wpisania kodu)
+
             interactive_manager.handle_event_all(event)
 
-        # Eventy w Menu
         elif current_state == MENU:
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 clicked = menu.handle_click(event.pos, (1, 0, 0))
@@ -166,29 +162,19 @@ while running:
                     current_state = PLAYING
                 elif clicked == "quit":
                     running = False
-                elif clicked == "options":
-                    print("Options pressed")
-                elif clicked == "credits":
-                    print("Credits pressed")
 
     # =====================================================
     # UPDATE
     # =====================================================
 
     if current_state == PLAYING:
+        # Jedno poprawne wywołanie update_all dla wszystkich postaci z przekazaniem platform
+        manager.update_all(dt, platform_mgr.platforms)
 
-        manager.update_all(
-            dt,
-            platform_mgr.platforms
-        )
-
-        interactive_manager.update_all(
-            player,
-            ghost
-        )
+        # Aktualizacja interakcji
+        interactive_manager.update_all(player, ghost)
 
         pygame.event.set_grab(True)
-
 
     elif current_state == MENU:
         menu.update(mouse_pos)
@@ -203,37 +189,14 @@ while running:
     if current_state == MENU:
         menu.draw(screen)
 
-
     elif current_state == PLAYING:
-
-        # Platforms
-
         platform_mgr.draw(screen)
-
-        # Levers, doors, panels, etc.
-
         interactive_manager.draw_all(screen)
-
-        # Characters
-
         manager.draw_all(screen)
 
-        player.draw_hitbox(screen, "red")
-
-        ghost.draw_hitbox(screen, "cyan")
-
-        # Obiekty interaktywne
-        interactive_manager.draw_all(screen)
-
-        # Postacie & Hitboxy
-        manager.draw_all(screen)
-        player.draw_hitbox(screen, "red")
-        ghost.draw_hitbox(screen, "cyan")
-
-        # UI / Tekst
         font = pygame.font.Font(None, 32)
         text = font.render(
-            f"Animation: {player.current_anim} | Grounded: {player.is_grounded}",
+            f"Power: {player.power} | Grounded: {player.is_grounded}",
             True,
             (255, 255, 255)
         )
@@ -247,10 +210,6 @@ while running:
         screen.blit(info, (10, 50))
 
     pygame.display.flip()
-
-# =========================================================
-# EXIT
-# =========================================================
 
 pygame.quit()
 sys.exit()
