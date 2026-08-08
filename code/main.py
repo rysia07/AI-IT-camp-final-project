@@ -18,6 +18,9 @@ from Platforms import PlatformManager
 # INITIALIZATION
 # =========================================================
 
+FPS = 60
+
+
 pygame.init()
 
 WIDTH, HEIGHT = 900, 600
@@ -29,6 +32,7 @@ clock = pygame.time.Clock()
 
 # Przywracamy normalny kursor
 pygame.mouse.set_visible(True)
+pygame.event.set_grab(True)
 
 # =========================================================
 # PLATFORMY
@@ -42,12 +46,46 @@ platform_mgr = PlatformManager("../pictures/kievinay-train-6558870_1920.png")
 
 manager = CharacterManager()
 
-player = Creature(450, 300, "../pictures/ludzik.png")
-player.movement_threshold = 0.1
+player = Creature(
+    450,
+    300,
+    "../pictures/ludzik.png"
+)
 
-player.add_anim("idle", frames=[0], cols=3, rows=3, priority=Creature.PRIORITY_IDLE)
-player.add_anim("walk", frames=[0, 1, 2, 3, 4, 5], cols=3, rows=3, speed=150, priority=Creature.PRIORITY_WALK)
-player.add_anim("attack", frames=[6, 7, 8], cols=3, rows=3, speed=300, loop=False, priority=Creature.PRIORITY_ATTACK)
+player.add_anim(
+    "idle",
+    frames=[0],
+    cols=3,
+    rows=3,
+    speed=100,
+    priority=Creature.PRIORITY_IDLE,
+    spritesheet_path="../pictures/ludzik.png",
+    scale=2.0
+)
+
+player.add_anim(
+    "walk",
+    frames=[0, 1, 2, 3, 4, 5],
+    cols=3,
+    rows=3,
+    speed=150,
+    priority=Creature.PRIORITY_WALK,
+    spritesheet_path="../pictures/ludzik.png",
+    scale=2.0
+)
+
+player.add_anim(
+    "attack",
+    frames=list(range(19)),
+    cols=5,
+    rows=4,
+    speed=35,
+    loop=False,
+    priority=Creature.PRIORITY_ATTACK,
+    spritesheet_path="../pictures/Gracz_atak.png",
+    scale=0.5
+)
+
 
 player.set_walk_idle("walk", "idle")
 player.play("idle")
@@ -94,7 +132,7 @@ running = True
 
 while running:
 
-    dt = clock.tick(60) / 1000.0
+    dt = clock.tick(FPS) / 1000.0
     events = pygame.event.get()
     mouse_pos = pygame.mouse.get_pos()
 
@@ -144,8 +182,11 @@ while running:
         # 2. Aktualizacja obiektów interaktywnych
         interactive_manager.update_all(player, ghost)
 
+        pygame.event.set_grab(True)
+
     elif current_state == MENU:
         menu.update(mouse_pos)
+        pygame.event.set_grab(False)
 
     # =====================================================
     # DRAW
