@@ -163,17 +163,12 @@ class Character:
             2
         )
 
-
-# =========================================================
-# CREATURE
-# =========================================================
-
 class Creature(Character):
     def __init__(self, x, y, spritesheet_path=None):
         super().__init__(
             x,
             y,
-            64,  # <-- Zwiększyliśmy rozmiar hitboksu z 32 na 64!
+            64,
             spritesheet_path=spritesheet_path
         )
 
@@ -182,145 +177,122 @@ class Creature(Character):
 
         self.speed = 400
         self.gravity = 2000
-        self.jump_force = -1000
+        self.jump_force = -850
 
         self.vel_y = 0
         self.is_grounded = False
 
+        # =========================================
+        # DOUBLE JUMP
+        # =========================================
+        self.max_jumps = 2
+        self.jumps_left = 2
+        self.jump_cooldown = 0  # Odczekanie między skokami
+
     def jump(self):
-
-        if self.is_grounded:
-
+        """Wykonuje skok, jeśli zostały wolne skoki i minął cooldown."""
+        if self.jumps_left > 0 and self.jump_cooldown <= 0:
             self.vel_y = self.jump_force
+            self.jumps_left -= 1
             self.is_grounded = False
+            self.jump_cooldown = 0.15  # 0.15 sekundy przerwy przed drugim skokiem
+
+    def reset_jumps(self):
+        """Odnawia podwójny skok po dotknięciu ziemi."""
+        self.is_grounded = True
+        self.jumps_left = self.max_jumps
 
     def update(self, dt, platforms=None):
-
         keys = pygame.key.get_pressed()
 
-        # =================================================
-        # RUCH POZIOMY
-        # =================================================
+        # Zmniejszamy licznik cooldownu skoku
+        if self.jump_cooldown > 0:
+            self.jump_cooldown -= dt
 
+        # =================================================
+        # RUCH POZIOMY (A / D)
+        # =================================================
         moving = False
         dx = 0
 
         if keys[pygame.K_a]:
-
             dx -= self.speed * dt
             moving = True
 
         if keys[pygame.K_d]:
-
             dx += self.speed * dt
             moving = True
 
         # =================================================
-        # ANIMACJE
+        # ANIMACJE (Walk / Idle)
         # =================================================
-
         if moving:
-
             if self.walk_anim:
-                self.play(
-                    self.walk_anim,
-                    reset=False
-                )
-
+                self.play(self.walk_anim, reset=False)
         else:
-
             if self.idle_anim:
-                self.play(
-                    self.idle_anim,
-                    reset=False
-                )
+                self.play(self.idle_anim, reset=False)
 
         # =================================================
-        # RUCH X
+        # RUCH W OSIACH X (Poziom)
         # =================================================
-
         self.pos.x += dx
-
         self.update_rect()
 
         if platforms:
             for platform in platforms:
-
-                if self.rect.colliderect(platform):
-
+                p_rect = platform.rect if hasattr(platform, 'rect') else platform
+                if self.rect.colliderect(p_rect):
                     if dx > 0:
-
-                        self.rect.right = platform.left
-
+                        self.rect.right = p_rect.left
                     elif dx < 0:
-
-                        self.rect.left = platform.right
-
+                        self.rect.left = p_rect.right
                     self.pos.x = self.rect.centerx
 
         # =================================================
-        # SKOK
+        # SKOK (Działa bez ograniczenia is_grounded!)
         # =================================================
-
-        if keys[pygame.K_w] and self.is_grounded:
-
+        if keys[pygame.K_w]:
             self.jump()
 
         # =================================================
-        # GRAWITACJA
+        # GRAWITACJA I SZYBKIE OPADANIE (S)
         # =================================================
-
         current_gravity = self.gravity
-
         if not self.is_grounded and keys[pygame.K_s]:
-
             current_gravity *= 3
 
         self.vel_y += current_gravity * dt
-
         self.pos.y += self.vel_y * dt
-
         self.update_rect()
 
         # =================================================
-        # KOLIZJE PIONOWE
+        # KOLIZJE PIONOWE (Y)
         # =================================================
-
         self.is_grounded = False
 
         if platforms:
             for platform in platforms:
+                p_rect = platform.rect if hasattr(platform, 'rect') else platform
 
-                if self.rect.colliderect(platform):
-
+                if self.rect.colliderect(p_rect):
                     if self.vel_y > 0:
-
-                        # LĄDOWANIE
-
-                        self.rect.bottom = platform.top
-
+                        # LĄDOWANIE NA PLATFORMIE
+                        self.rect.bottom = p_rect.top
                         self.vel_y = 0
-
-                        self.is_grounded = True
+                        self.reset_jumps()  # Odnawiamy skoki po wylądowaniu!
 
                     elif self.vel_y < 0:
-
-                        # UDERZENIE OD DOŁU
-
-                        self.rect.top = platform.bottom
-
+                        # UDERZENIE GŁOWĄ OD DOŁU
+                        self.rect.top = p_rect.bottom
                         self.vel_y = 0
 
                     self.pos.y = self.rect.centery
 
         # =================================================
-        # ANIMACJA
+        # AKTUALIZACJA SPRITE'A ANIMACJI
         # =================================================
-
-        super().update(
-            int(dt * 1000)
-        )
-
+        super().update(int(dt * 1000))
 
 # =========================================================
 # GHOST
