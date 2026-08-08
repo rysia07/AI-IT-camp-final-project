@@ -47,10 +47,18 @@ class Spritesheet:
         return frames
 
 class Animation:
-    def __init__(self, spritesheet: Spritesheet, frames: List[Frame], loop: bool = True):
+    def __init__(
+        self,
+        spritesheet: Spritesheet,
+        frames: List[Frame],
+        loop: bool = True,
+        scale: float = 1.0
+    ):
         self.spritesheet = spritesheet
         self.frames = frames
         self.loop = loop
+        self.scale = scale
+
         self.current = 0
         self.elapsed = 0
         self._finished = False
@@ -106,53 +114,113 @@ class SpriteObject:
         self.current: Optional[str] = None
         self.position: Tuple[int, int] = (x, y)
 
-    def add_animation(self, name: str,
-                      cols: int, rows: int,
-                      frame_indices: List[int],
-                      frame_duration: int = 100,
-                      loop: bool = True,
-                      start_x: int = 0, start_y: int = 0,
-                      x_spacing: int = 0, y_spacing: int = 0,
-                      total_frames: Optional[int] = None):
+    def add_animation(
+            self,
+            name: str,
+            cols: int,
+            rows: int,
+            frame_indices: List[int],
+            frame_duration: int = 100,
+            loop: bool = True,
+            start_x: int = 0,
+            start_y: int = 0,
+            x_spacing: int = 0,
+            y_spacing: int = 0,
+            total_frames: Optional[int] = None,
+            spritesheet_path: Optional[str] = None,
+            scale: float = 1.0
+    ):
         """
         Create an animation from explicit frame_indices.
-        frame_indices: REQUIRED list of indices (row-major, zero-based).
-        """
-        if not frame_indices:
-            raise ValueError("frame_indices is required and must be a non-empty list.")
 
-        # build full grid frames so indices map correctly
-        full_frames = self.spritesheet.create_grid_frames(
-            cols=cols, rows=rows, total_frames=total_frames,
-            duration=frame_duration, start_x=start_x, start_y=start_y,
-            x_spacing=x_spacing, y_spacing=y_spacing
+        If spritesheet_path is supplied, this animation uses that
+        spritesheet instead of the default one.
+        """
+
+        if not frame_indices:
+            raise ValueError(
+                "frame_indices is required and must be a non-empty list."
+            )
+
+        # Use a different spritesheet if one was supplied
+        if spritesheet_path:
+            animation_spritesheet = Spritesheet(spritesheet_path)
+        else:
+            animation_spritesheet = self.spritesheet
+
+        # Build grid from THIS animation's spritesheet
+        full_frames = animation_spritesheet.create_grid_frames(
+            cols=cols,
+            rows=rows,
+            total_frames=total_frames,
+            duration=frame_duration,
+            start_x=start_x,
+            start_y=start_y,
+            x_spacing=x_spacing,
+            y_spacing=y_spacing
         )
 
         filtered: List[Frame] = []
-        for i in frame_indices:
-            if 0 <= i < len(full_frames):
-                f = full_frames[i]
-                filtered.append(Frame(f.rect, frame_duration))
-            else:
-                raise IndexError(f"Frame index {i} out of range (0..{len(full_frames)-1}).")
 
-        self.animations[name] = Animation(self.spritesheet, filtered, loop)
+        for i in frame_indices:
+
+            if 0 <= i < len(full_frames):
+
+                f = full_frames[i]
+
+                filtered.append(
+                    Frame(f.rect, frame_duration)
+                )
+
+            else:
+
+                raise IndexError(
+                    f"Frame index {i} out of range "
+                    f"(0..{len(full_frames) - 1})."
+                )
+
+        # IMPORTANT:
+        # Animation gets its own spritesheet
+        self.animations[name] = Animation(
+            animation_spritesheet,
+            filtered,
+            loop,
+            scale
+        )
 
     # alias with shorter name requested by you
-    def add_frames(self, name: str,
-                   indices: List[int],
-                   cols: int, rows: int,
-                   frame_duration: int = 100,
-                   loop: bool = True,
-                   start_x: int = 0, start_y: int = 0,
-                   x_spacing: int = 0, y_spacing: int = 0,
-                   total_frames: Optional[int] = None):
-        self.add_animation(name=name, cols=cols, rows=rows,
-                           frame_indices=indices,
-                           frame_duration=frame_duration, loop=loop,
-                           start_x=start_x, start_y=start_y,
-                           x_spacing=x_spacing, y_spacing=y_spacing,
-                           total_frames=total_frames)
+    def add_frames(
+            self,
+            name: str,
+            indices: List[int],
+            cols: int,
+            rows: int,
+            frame_duration: int = 100,
+            loop: bool = True,
+            start_x: int = 0,
+            start_y: int = 0,
+            x_spacing: int = 0,
+            y_spacing: int = 0,
+            total_frames: Optional[int] = None,
+            spritesheet_path: Optional[str] = None,
+            scale: float = 1.0
+    ):
+
+        self.add_animation(
+            name=name,
+            cols=cols,
+            rows=rows,
+            frame_indices=indices,
+            frame_duration=frame_duration,
+            loop=loop,
+            start_x=start_x,
+            start_y=start_y,
+            x_spacing=x_spacing,
+            y_spacing=y_spacing,
+            total_frames=total_frames,
+            spritesheet_path=spritesheet_path,
+            scale=scale
+        )
 
     def add_frame_to_animation(self, anim_name: str, rect: pygame.Rect, duration: int = 100):
         if anim_name in self.animations:
@@ -170,31 +238,50 @@ class SpriteObject:
         return None
 
     def draw(self, surface):
-        if self.current and self.current in self.animations:
-            anim = self.animations[self.current]
-            img = anim.spritesheet.get_frame(
-                anim.frames[anim.current].rect
-            )
 
-            # ========================================================
-            # POWIĘKSZENIE GRAFIKI
-            # Wprowadź współczynnik skalowania (np. 2.0 = dwa razy większy)
-            # ========================================================
-            scale_factor = 2.0  # <--- Zmień na 1.5, 2.0, 3.0 według uznania!
+        if not self.current:
+            return
 
-            new_width = int(img.get_width() * scale_factor)
-            new_height = int(img.get_height() * scale_factor)
+        if self.current not in self.animations:
+            return
 
-            # Skalujemy klatkę animacji
-            img = pygame.transform.scale(img, (new_width, new_height))
+        anim = self.animations[self.current]
 
-            # Rysujemy wyśrodkowany obrazek
-            img_rect = img.get_rect(center=self.position)
-            surface.blit(img, img_rect)
+        if not anim.frames:
+            return
 
-            # Rysujemy klatkę wyśrodkowaną na pozycji obiektu (self.position)
-            img_rect = img.get_rect(center=self.position)
-            surface.blit(img, img_rect)
+        img = anim.spritesheet.get_frame(
+            anim.frames[anim.current].rect
+        )
+
+        # ==========================================
+        # SCALE
+        # ==========================================
+
+        scale_factor = anim.scale
+
+        new_width = int(
+            img.get_width() * scale_factor
+        )
+
+        new_height = int(
+            img.get_height() * scale_factor
+        )
+
+        img = pygame.transform.scale(
+            img,
+            (new_width, new_height)
+        )
+
+        # ==========================================
+        # DRAW
+        # ==========================================
+
+        img_rect = img.get_rect(
+            center=self.position
+        )
+
+        surface.blit(img, img_rect)
 
     def set_position(self, x: int, y: int):
         self.position = (x, y)

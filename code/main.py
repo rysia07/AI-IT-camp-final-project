@@ -1,5 +1,7 @@
 import sys
 import pygame
+from LoadLevels import load_level
+
 
 # Importujemy wszystkie potrzebne klasy z pliku Interactive.py
 from Interactive import (
@@ -18,6 +20,9 @@ from Platforms import PlatformManager
 # INITIALIZATION
 # =========================================================
 
+FPS = 60
+
+
 pygame.init()
 
 WIDTH, HEIGHT = 900, 600
@@ -29,12 +34,21 @@ clock = pygame.time.Clock()
 
 # Przywracamy normalny kursor
 pygame.mouse.set_visible(True)
+pygame.event.set_grab(True)
 
 # =========================================================
 # PLATFORMY
 # =========================================================
 
-platform_mgr = PlatformManager("../pictures/kievinay-train-6558870_1920.png")
+level = load_level("../levels/level.txt")
+
+platform_mgr = PlatformManager(
+    "../pictures/platforma.png",
+    level.platforms
+)
+
+interactive_manager = level.interactive_manager
+
 
 # =========================================================
 # CHARACTERS
@@ -42,12 +56,47 @@ platform_mgr = PlatformManager("../pictures/kievinay-train-6558870_1920.png")
 
 manager = CharacterManager()
 
-player = Creature(450, 300, "../pictures/ludzik.png")
-player.movement_threshold = 0.1
+player = Creature(
+    level.player_pos[0],
+    level.player_pos[1],
+    "../pictures/ludzik.png"
+)
 
-player.add_anim("idle", frames=[0], cols=3, rows=3, priority=Creature.PRIORITY_IDLE)
-player.add_anim("walk", frames=[0, 1, 2, 3, 4, 5], cols=3, rows=3, speed=150, priority=Creature.PRIORITY_WALK)
-player.add_anim("attack", frames=[6, 7, 8], cols=3, rows=3, speed=300, loop=False, priority=Creature.PRIORITY_ATTACK)
+
+player.add_anim(
+    "idle",
+    frames=[0],
+    cols=3,
+    rows=3,
+    speed=100,
+    priority=Creature.PRIORITY_IDLE,
+    spritesheet_path="../pictures/ludzik.png",
+    scale=2.0
+)
+
+player.add_anim(
+    "walk",
+    frames=[0, 1, 2, 3, 4, 5],
+    cols=3,
+    rows=3,
+    speed=150,
+    priority=Creature.PRIORITY_WALK,
+    spritesheet_path="../pictures/ludzik.png",
+    scale=2.0
+)
+
+player.add_anim(
+    "attack",
+    frames=list(range(19)),
+    cols=5,
+    rows=4,
+    speed=35,
+    loop=False,
+    priority=Creature.PRIORITY_ATTACK,
+    spritesheet_path="../pictures/Gracz_atak.png",
+    scale=0.5
+)
+
 
 player.set_walk_idle("walk", "idle")
 player.play("idle")
@@ -66,6 +115,7 @@ interactive_manager = InteractiveManager()
 # Dodajemy obiekty bezpośrednio do menedżeralever =
 
 lever = Lever(300, 300, 100, 20, direction="left")
+
 door = Door(700, 250, 30, 120, trigger_object=lever) # Drzwi otwierają się dźwignią!
 
 interactive_manager.add(lever)
@@ -94,7 +144,7 @@ running = True
 
 while running:
 
-    dt = clock.tick(60) / 1000.0
+    dt = clock.tick(FPS) / 1000.0
     events = pygame.event.get()
     mouse_pos = pygame.mouse.get_pos()
 
@@ -137,14 +187,23 @@ while running:
     # =====================================================
 
     if current_state == PLAYING:
-        # 1. Aktualizacja fizyki postaci i platform
-        manager.update_all(dt, platform_mgr.platforms)
 
-        # 2. Aktualizacja obiektów interaktywnych
-        interactive_manager.update_all(player, ghost)
+        manager.update_all(
+            dt,
+            platform_mgr.platforms
+        )
+
+        interactive_manager.update_all(
+            player,
+            ghost
+        )
+
+        pygame.event.set_grab(True)
+
 
     elif current_state == MENU:
         menu.update(mouse_pos)
+        pygame.event.set_grab(False)
 
     # =====================================================
     # DRAW
@@ -155,10 +214,24 @@ while running:
     if current_state == MENU:
         menu.draw(screen)
 
+
     elif current_state == PLAYING:
-        # Platformy
-        for platform in platform_mgr.platforms:
-            platform_mgr.draw(screen)
+
+        # Platforms
+
+        platform_mgr.draw(screen)
+
+        # Levers, doors, panels, etc.
+
+        interactive_manager.draw_all(screen)
+
+        # Characters
+
+        manager.draw_all(screen)
+
+        player.draw_hitbox(screen, "red")
+
+        ghost.draw_hitbox(screen, "cyan")
 
         # Obiekty interaktywne
         interactive_manager.draw_all(screen)
