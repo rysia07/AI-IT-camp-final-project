@@ -138,8 +138,6 @@ def load_rects_from_file(filepath: str) -> RectManager:
         print(f"❌ File not found: {filepath}")
         return manager
 
-def get_player_pos():
-    return player_pos
 
 
 # ============= DEMO =============
