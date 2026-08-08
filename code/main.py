@@ -101,19 +101,18 @@ while running:
     # =====================================================
     # EVENTS
     # =====================================================
-
     for event in events:
         if event.type == pygame.QUIT:
             running = False
 
-        if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-            pygame.mouse.set_visible(True)
-            current_state = MENU
-
-        # Eventy w grze
         if current_state == PLAYING:
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_2:
-                player.play("attack")
+            # Obsługa pojedynczych wciśnięć klawiszy (KEYDOWN)
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_w:  # Lub K_SPACE
+                    player.jump()
+
+                if event.key == pygame.K_2:
+                    player.play("attack")
 
             # Przekazujemy zdarzenia klawiatury do obiektów (np. do wpisania kodu)
             interactive_manager.handle_event_all(event)

@@ -223,9 +223,11 @@ class ScoringButton(Interactive):
 
             # --- KOLIZJA Z GÓRY (Lądowanie na przycisku) ---
             if min_overlap == overlap_top and creature.vel_y >= 0:
+                # Przy lądowaniu na obiekcie z góry (min_overlap == overlap_top):
                 creature.rect.bottom = self.rect.top
                 creature.vel_y = 0
                 creature.is_grounded = True
+                creature.jumps_left = creature.max_jumps  # <--- PRZYWRACAMY PODWÓJNY SKOK!
                 creature.pos.y = creature.rect.centery
 
             # --- KOLIZJA Z DOŁU (Uderzenie głową od dołu) ---
@@ -252,34 +254,28 @@ class ScoringButton(Interactive):
         # Czarna ramka wokół przycisku
         pygame.draw.rect(surface, "black", self.rect, 2)
 
-class Door(Interactive):
 
-    def __init__(self, x, y, w, h, trigger_object=None):
+class Door(Interactive):
+    def __init__(self, x, y, w=30, h=120, trigger_object=None):
         super().__init__(x, y, w, h)
         self.is_open = False
-        self.trigger_object = trigger_object  # Obiekt, który otwiera drzwi (np. Lever lub CodePanel)
+        self.trigger_object = trigger_object
 
     def update(self, creature, ghost):
-        # 1. Sprawdzamy stan obiektu otwierającego (jeśli został przypisany)
         if self.trigger_object:
-            # Dla dźwigni: otwórz, jeśli jest włączona (enabled == True)
             if hasattr(self.trigger_object, 'enabled'):
                 self.is_open = self.trigger_object.enabled
-            # Dla panela z kodem: otwórz, jeśli kod jest poprawny (is_unlocked == True)
             elif hasattr(self.trigger_object, 'is_unlocked'):
                 self.is_open = self.trigger_object.is_unlocked
 
-        # 2. Fizyczna kolizja gracza z zamkniętymi drzwiami
         if not self.is_open and creature.rect.colliderect(self.rect):
-            # Obliczamy głębokość wniknięcia
-            overlap_left   = creature.rect.right - self.rect.left
-            overlap_right  = self.rect.right - creature.rect.left
-            overlap_top    = creature.rect.bottom - self.rect.top
+            overlap_left = creature.rect.right - self.rect.left
+            overlap_right = self.rect.right - creature.rect.left
+            overlap_top = creature.rect.bottom - self.rect.top
             overlap_bottom = self.rect.bottom - creature.rect.top
 
             min_overlap = min(overlap_left, overlap_right, overlap_top, overlap_bottom)
 
-            # Blokujemy ruch postaci z każdej strony
             if min_overlap == overlap_left:
                 creature.rect.right = self.rect.left
                 creature.pos.x = creature.rect.centerx
@@ -287,23 +283,21 @@ class Door(Interactive):
                 creature.rect.left = self.rect.right
                 creature.pos.x = creature.rect.centerx
             elif min_overlap == overlap_top and creature.vel_y >= 0:
+                # LĄDOWANIE NA DRZWIACH Z GÓRY:
                 creature.rect.bottom = self.rect.top
                 creature.vel_y = 0
-                creature.is_grounded = True
                 creature.pos.y = creature.rect.centery
+
+                # REKODUJEMY PODWÓJNY SKOK!
+                if hasattr(creature, 'reset_jumps'):
+                    creature.reset_jumps()
+                else:
+                    creature.is_grounded = True
+
             elif min_overlap == overlap_bottom and creature.vel_y < 0:
                 creature.rect.top = self.rect.bottom
                 creature.vel_y = 0
                 creature.pos.y = creature.rect.centery
-
-    def draw(self, surface):
-        if not self.is_open:
-            # Zamknięte drzwi (brązowy blok ze ściankami)
-            pygame.draw.rect(surface, (139, 69, 19), self.rect)
-            pygame.draw.rect(surface, "black", self.rect, 2)
-        else:
-            # Otwartym drzwiom rysujemy tylko obrys (przejście jest wolne)
-            pygame.draw.rect(surface, (100, 100, 100), self.rect, 2)
 
 class LevelGate(Interactive):
 
