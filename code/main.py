@@ -3,15 +3,7 @@ import pygame
 from LoadLevels import load_level
 
 
-# Importujemy wszystkie potrzebne klasy z pliku Interactive.py
-from Interactive import (
-    Lever,
-    CodePanel,
-    ScoringButton,
-    Door,
-    LevelGate,
-    InteractiveManager
-)
+
 from Characters import Creature, GhostMouse, CharacterManager
 from GUI import MainMenu
 from Platforms import PlatformManager
@@ -28,6 +20,7 @@ pygame.init()
 WIDTH, HEIGHT = 900, 600
 
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
+screen_state = "normal"
 pygame.display.set_caption("Placeholder")
 
 clock = pygame.time.Clock()
@@ -110,12 +103,13 @@ manager.add("ghost", ghost)
 # INTERACTIVE OBJECTS (Dźwignie, Panele itp.)
 # =========================================================
 
-interactive_manager = InteractiveManager()
+
 
 # Dodajemy obiekty bezpośrednio do menedżeralever =
 
-lever = Lever(300, 300, 100, 20, direction="left")
 
+<<<<<<< HEAD
+=======
 door = Door(700, 250, 30, 120, trigger_object=lever) # Drzwi otwierają się dźwignią!
 
 interactive_manager.add(lever)
@@ -123,6 +117,7 @@ interactive_manager.add(door)
 interactive_manager.add(CodePanel(700, 300, code="1234"))
 interactive_manager.add(ScoringButton(490, 490, required_power=3))  # Power 0, żeby działało od razu
 interactive_manager.add(LevelGate(800, 400))
+>>>>>>> master
 
 # =========================================================
 # MENU / GAME STATE
