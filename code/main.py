@@ -9,9 +9,11 @@ from Interactive import (
     LevelGate,
     InteractiveManager
 )
-from Characters import Creature, GhostMouse, CharacterManager
+from Characters import Creature, GhostMouse, CharacterManager, ShootingEnemy, ProjectileManager
 from GUI import MainMenu
 from Platforms import PlatformManager
+from options_menu import OptionsMenu
+from credits_menu import CreditsMenu
 
 # =========================================================
 # INITIALIZATION
@@ -57,6 +59,20 @@ manager.add("player", player)
 manager.add("ghost", ghost)
 
 # =========================================================
+# ENEMIES (Wrogowie)
+# =========================================================
+
+projectile_manager = ProjectileManager()
+
+enemy = ShootingEnemy(700, 200, "../pictures/ludzik.png")
+enemy.add_anim("idle", frames=[0], cols=3, rows=3, priority=ShootingEnemy.PRIORITY_IDLE)
+enemy.add_anim("walk", frames=[0, 1, 2, 3, 4, 5], cols=3, rows=3, speed=150, priority=ShootingEnemy.PRIORITY_WALK)
+enemy.add_anim("shoot", frames=[6, 7, 8], cols=3, rows=3, speed=300, loop=False, priority=ShootingEnemy.PRIORITY_SHOOT)
+enemy.set_walk_idle("walk", "idle")
+enemy.play("idle")
+enemy_alive = True
+
+# =========================================================
 # INTERACTIVE OBJECTS (Dźwignie, Panele itp.)
 # =========================================================
 
@@ -79,6 +95,8 @@ CREDITS = 3
 
 current_state = MENU
 menu = MainMenu(WIDTH, HEIGHT)
+options_menu = OptionsMenu(WIDTH, HEIGHT)
+credits_menu = CreditsMenu(WIDTH, HEIGHT)
 
 # =========================================================
 # GAME LOOP
@@ -102,12 +120,19 @@ while running:
 
         if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
             pygame.mouse.set_visible(True)
+            if current_state == OPTIONS:
+                options_menu.active = False
+            elif current_state == CREDITS:
+                credits_menu.active = False
             current_state = MENU
 
         # Eventy w grze
         if current_state == PLAYING:
             if event.type == pygame.KEYDOWN and event.key == pygame.K_2:
                 player.play("attack")
+                # Zadaj obrażenia wrogowi jeśli jest w zasięgu
+                if player.rect.colliderect(enemy.rect):
+                    enemy.take_damage(20)
 
             # Przekazujemy zdarzenia klawiatury do obiektów (np. do wpisania kodu)
             interactive_manager.handle_event_all(event)
@@ -123,9 +148,27 @@ while running:
                 elif clicked == "quit":
                     running = False
                 elif clicked == "options":
-                    print("Options pressed")
+                    options_menu.active = True
+                    current_state = OPTIONS
+                    pygame.mouse.set_visible(True)
                 elif clicked == "credits":
-                    print("Credits pressed")
+                    credits_menu.active = True
+                    current_state = CREDITS
+                    pygame.mouse.set_visible(True)
+
+        elif current_state == OPTIONS:
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                action = options_menu.handle_input()
+                if action == "back":
+                    options_menu.active = False
+                    current_state = MENU
+
+        elif current_state == CREDITS:
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                action = credits_menu.handle_input()
+                if action == "back":
+                    credits_menu.active = False
+                    current_state = MENU
 
     # =====================================================
     # UPDATE
@@ -135,11 +178,45 @@ while running:
         # 1. Aktualizacja fizyki postaci i platform
         manager.update_all(dt, platform_mgr.platforms)
 
-        # 2. Aktualizacja obiektów interaktywnych
+        # 2. Aktualizacja wrogów
+        if enemy_alive:
+            enemy.update(dt, player.pos, platform_mgr.platforms)
+            
+            # 3. Strzelanie wroga
+            if enemy.shoot_cooldown <= 0 and enemy.is_alive():
+                projectile = enemy.shoot(player.pos.x, player.pos.y)
+                projectile_manager.add(projectile)
+                enemy.shoot_cooldown = enemy.shoot_interval
+            
+            # Sprawdzenie czy wróg umarł
+            if not enemy.is_alive():
+                enemy_alive = False
+
+        # 4. Aktualizacja pocisków
+        projectile_manager.update(dt)
+        
+        # 5. Kolizje pocisków z graczem
+        projectiles_to_remove = []
+        for projectile in projectile_manager.get_projectiles():
+            if player.rect.colliderect(projectile.rect):
+                player.hp -= projectile.damage
+                projectiles_to_remove.append(projectile)
+        
+        for projectile in projectiles_to_remove:
+            if projectile in projectile_manager.projectiles:
+                projectile_manager.projectiles.remove(projectile)
+
+        # 6. Aktualizacja obiektów interaktywnych
         interactive_manager.update_all(player, ghost)
 
     elif current_state == MENU:
         menu.update(mouse_pos)
+
+    elif current_state == OPTIONS:
+        options_menu.update(mouse_pos)
+
+    elif current_state == CREDITS:
+        credits_menu.update(mouse_pos)
 
     # =====================================================
     # DRAW
@@ -149,6 +226,12 @@ while running:
 
     if current_state == MENU:
         menu.draw(screen)
+
+    elif current_state == OPTIONS:
+        options_menu.draw(screen)
+
+    elif current_state == CREDITS:
+        credits_menu.draw(screen)
 
     elif current_state == PLAYING:
         # Platformy
@@ -160,8 +243,17 @@ while running:
 
         # Postacie & Hitboxy
         manager.draw_all(screen)
-        player.draw_hitbox(screen, "red")
-        ghost.draw_hitbox(screen, "cyan")
+        if enemy_alive:
+            enemy.draw(screen)
+            player.draw_hitbox(screen, "red")
+            ghost.draw_hitbox(screen, "cyan")
+            enemy.draw_hitbox(screen, "green")
+        else:
+            player.draw_hitbox(screen, "red")
+            ghost.draw_hitbox(screen, "cyan")
+        
+        # Pociski
+        projectile_manager.draw_all(screen)
 
         # UI / Tekst
         font = pygame.font.Font(None, 32)
@@ -178,6 +270,10 @@ while running:
             (200, 200, 200)
         )
         screen.blit(info, (10, 50))
+        
+        # HP wyświetlane
+        hp_text = font.render(f"Player HP: {player.hp} | Enemy HP: {enemy.hp}", True, (255, 0, 0))
+        screen.blit(hp_text, (10, 90))
 
     pygame.display.flip()
 

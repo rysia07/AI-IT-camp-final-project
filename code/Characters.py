@@ -1,6 +1,7 @@
 import pygame
 from typing import Optional
 from animations import SpriteObject
+import random
 
 
 class Character:
@@ -395,3 +396,209 @@ class CharacterManager:
         for character in self.characters.values():
 
             character.draw(surface)
+
+
+# =========================================================
+# PROJECTILE
+# =========================================================
+
+class Projectile:
+    """Pocisk wystrzelony przez wroga."""
+    
+    def __init__(self, x: float, y: float, vx: float, vy: float, damage: int = 10, color: str = "yellow", lifetime: float = 5.0):
+        self.pos = pygame.Vector2(x, y)
+        self.vel = pygame.Vector2(vx, vy)
+        self.radius = 4
+        self.damage = damage
+        self.color = color
+        self.lifetime = lifetime
+        self.age = 0.0
+        
+        self.rect = pygame.Rect(0, 0, self.radius * 2, self.radius * 2)
+        self.rect.center = (int(self.pos.x), int(self.pos.y))
+    
+    def update(self, dt: float):
+        self.age += dt
+        self.pos += self.vel * dt
+        self.rect.center = (int(self.pos.x), int(self.pos.y))
+    
+    def is_alive(self) -> bool:
+        return self.age < self.lifetime
+    
+    def draw(self, surface):
+        pygame.draw.circle(surface, self.color, (int(self.pos.x), int(self.pos.y)), self.radius)
+    
+    def draw_hitbox(self, surface, color="yellow"):
+        pygame.draw.rect(surface, color, self.rect, 2)
+
+
+# =========================================================
+# PROJECTILE MANAGER
+# =========================================================
+
+class ProjectileManager:
+    """Zarządza wszystkimi pociskami w grze."""
+    
+    def __init__(self):
+        self.projectiles = []
+    
+    def add(self, projectile: Projectile):
+        self.projectiles.append(projectile)
+    
+    def update(self, dt: float):
+        self.projectiles = [p for p in self.projectiles if p.is_alive()]
+        for projectile in self.projectiles:
+            projectile.update(dt)
+    
+    def draw_all(self, surface):
+        for projectile in self.projectiles:
+            projectile.draw(surface)
+    
+    def get_projectiles(self):
+        return self.projectiles.copy()
+
+
+# =========================================================
+# SHOOTING ENEMY
+# =========================================================
+
+class ShootingEnemy(Character):
+    """Wróg, który się porusza i strzela do gracza."""
+    
+    PRIORITY_IDLE = 1
+    PRIORITY_WALK = 1
+    PRIORITY_SHOOT = 3
+    
+    def __init__(self, x: float, y: float, spritesheet_path: Optional[str] = None):
+        super().__init__(
+            x,
+            y,
+            50,
+            spritesheet_path=spritesheet_path
+        )
+        
+        self.hp = 30
+        self.speed = 150
+        self.shoot_cooldown = 0.0
+        self.shoot_interval = 1.5
+        self.projectile_speed = 300
+        self.projectile_damage = 15
+        
+        # Inteligencja wroga
+        self.detection_range = 300
+        self.patrol_speed = 100
+        self.move_direction = random.choice([-1, 1])
+        self.direction = 1
+        
+        # Grawitacja
+        self.gravity = 2000
+        self.vel_y = 0
+        self.is_grounded = False
+    
+    def shoot(self, target_x: float, target_y: float) -> Projectile:
+        """Strzela w kierunku celu."""
+        # Kierunek do celu
+        dx = target_x - self.pos.x
+        dy = target_y - self.pos.y
+        distance = (dx**2 + dy**2)**0.5
+        
+        if distance > 0:
+            dx /= distance
+            dy /= distance
+        
+        # Tworzenie pocisku
+        projectile = Projectile(
+            self.pos.x,
+            self.pos.y,
+            dx * self.projectile_speed,
+            dy * self.projectile_speed,
+            damage=self.projectile_damage,
+            color="orange"
+        )
+        return projectile
+    
+    def take_damage(self, damage: int):
+        """Bierze obrażenia."""
+        self.hp -= damage
+    
+    def is_alive(self) -> bool:
+        """Sprawdza, czy wróg żyje."""
+        return self.hp > 0
+    
+    def update(self, dt: float, player_pos: pygame.Vector2 = None, platforms=None):
+        """Aktualizuje pozycję i logikę wroga."""
+        
+        # Zmniejsz cooldown
+        self.shoot_cooldown -= dt
+        
+        # Ruch
+        dx = 0
+        
+        if player_pos:
+            # Odległość do gracza
+            dist_to_player = (self.pos - player_pos).length()
+            
+            if dist_to_player < self.detection_range:
+                # Widzi gracza - podchodzi
+                direction = (player_pos - self.pos).normalize()
+                dx = direction.x * self.speed * dt
+                self.direction = 1 if dx >= 0 else -1
+            else:
+                # Patrolu
+                dx = self.move_direction * self.patrol_speed * dt
+                self.direction = self.move_direction
+        else:
+            # Patrolu, jeśli brak pozycji gracza
+            dx = self.move_direction * self.patrol_speed * dt
+        
+        # Ruch X
+        self.pos.x += dx
+        self.update_rect()
+        
+        # Kolizje z platformami (poziomo)
+        if platforms:
+            for platform in platforms:
+                if self.rect.colliderect(platform):
+                    if dx > 0:
+                        self.rect.right = platform.left
+                        self.move_direction = -1
+                    elif dx < 0:
+                        self.rect.left = platform.right
+                        self.move_direction = 1
+                    self.pos.x = self.rect.centerx
+        
+        # Zmiana kierunku patrolu na krawędziach
+        if self.pos.x < 50 or self.pos.x > 850:
+            self.move_direction *= -1
+        
+        # ========== GRAWITACJA ==========
+        self.vel_y += self.gravity * dt
+        self.pos.y += self.vel_y * dt
+        self.update_rect()
+        
+        # Kolizje z platformami (pionowo)
+        self.is_grounded = False
+        if platforms:
+            for platform in platforms:
+                if self.rect.colliderect(platform):
+                    if self.vel_y > 0:
+                        # Lądowanie
+                        self.rect.bottom = platform.top
+                        self.vel_y = 0
+                        self.is_grounded = True
+                    elif self.vel_y < 0:
+                        # Uderzenie od dołu
+                        self.rect.top = platform.bottom
+                        self.vel_y = 0
+                    self.pos.y = self.rect.centery
+        
+        # Animacje
+        if abs(dx) > self.movement_threshold:
+            if self.walk_anim:
+                self.play(self.walk_anim, reset=False)
+        else:
+            if self.idle_anim:
+                self.play(self.idle_anim, reset=False)
+        
+        # Update animacji
+        super().update(int(dt * 1000))
