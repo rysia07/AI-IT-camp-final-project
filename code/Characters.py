@@ -352,8 +352,118 @@ class GhostMouse(Character):
             int(dt * 1000)
         )
 
-# =========================================================
-# CHARACTER MANAGER
+class WalkingEnemy(Character):
+
+    def __init__(self, x, y, target=None, spritesheet_path=None):
+
+        super().__init__(
+            x,
+            y,
+            64,
+            spritesheet_path=spritesheet_path
+        )
+
+        self.hp = 50
+
+        #movement
+        self.speed = 250
+
+        #gravity
+        self.gravity = 2000
+        self.vel_y = 0
+
+        self.is_grounded = False
+
+        #Target To Follow
+        self.target = target
+    def update(self, dt, platforms=None):
+
+        # =====================================================
+        # FOLLOW MOVEMENT
+        # =====================================================
+
+        dx = 0
+
+        if self.target:
+
+            if self.target.pos.x < self.pos.x:
+                dx = -self.speed * dt
+
+            elif self.target.pos.x > self.pos.x:
+                dx = self.speed * dt
+
+        # =====================================================
+        # EDGE CHECK
+        # =====================================================
+
+        next_x = self.pos.x + dx
+
+        check_x = next_x
+
+        if
+        # =====================================================
+        # HORIZONTAL COLLISION
+        # =====================================================
+
+        if platforms:
+
+            for platform in platforms:
+
+                if self.rect.colliderect(platform):
+
+                    if dx > 0:
+                        self.rect.right = platform.left
+
+                    elif dx < 0:
+                        self.rect.left = platform.right
+
+                    self.pos.x = self.rect.centerx
+
+        # =====================================================
+        # gravity
+        # =====================================================
+
+        self.vel_y += self.gravity * dt
+
+        self.pos.y += self.vel_y * dt
+
+        self.update_rect()
+
+        # =====================================================
+        # vertical collision
+        # =====================================================
+
+        self.is_grounded = False
+
+        if platforms:
+
+            for platform in platforms:
+
+                #falling
+                if self.vel_y > 0:
+
+                    self.rect.bottom = platform.top
+
+                    self.vel_y = 0
+                    self.is_grounded = True
+
+                # Hitting Ceiling
+                elif self.vel_y < 0:
+
+                    self.rect.top = platform.bottom
+
+                    self.vel_y = 0
+
+                self.pos.y = self.rect.centery
+
+        # =====================================================
+        # ANIMATION / SPRITE
+        # =====================================================
+
+        Character.update(
+            self,
+            int(dt * 1000)
+        )
 # =========================================================
 
 class CharacterManager:
