@@ -164,6 +164,9 @@ while running:
                 if event.key == pygame.K_2:
                     player.play("attack")
 
+                if event.key == pygame.K_ESCAPE:
+                    current_state = MENU
+                    pygame.mouse.set_visible(True)
             # Przekazujemy zdarzenia klawiatury do obiektów (np. do wpisania kodu)
             interactive_manager.handle_event_all(event)
 
