@@ -10,7 +10,9 @@ from Interactive import (
     LevelGate,
     InteractiveManager
 )
-
+from Platforms import PlatformManager
+from Characters import Creature, GhostMouse, CharacterManager
+from GUI import MainMenu
 # =========================================================
 # INITIALIZATION
 # =========================================================
@@ -29,6 +31,7 @@ clock = pygame.time.Clock()
 
 pygame.mouse.set_visible(True)
 
+interactive_manager = InteractiveManager()
 # =========================================================
 # PLATFORMY
 # =========================================================
