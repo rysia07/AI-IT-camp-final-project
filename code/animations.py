@@ -172,22 +172,29 @@ class SpriteObject:
     def draw(self, surface):
         if self.current and self.current in self.animations:
             anim = self.animations[self.current]
-
             img = anim.spritesheet.get_frame(
                 anim.frames[anim.current].rect
             )
 
-            # TUTAJ REGULUJESZ PRZESUNIĘCIE GRAFIKI WGLĘDEM HITBOXU:
-            # - Pierwsza liczba (X): zmniejsz (np. do -100 lub -120), aby przesunąć postać W LEWO.
-            # - Druga liczba (Y): zmniejsz (np. do -160 lub -180), aby podnieść postać W GÓRĘ.
+            # ========================================================
+            # POWIĘKSZENIE GRAFIKI
+            # Wprowadź współczynnik skalowania (np. 2.0 = dwa razy większy)
+            # ========================================================
+            scale_factor = 2.0  # <--- Zmień na 1.5, 2.0, 3.0 według uznania!
 
-            offset_x = -105 # <--- dostosuj, aż zielona kropka będzie na klatce piersiowej
-            offset_y = -135  # <--- dostosuj, aż stopy będą dokładnie na dole czerwonej ramki
+            new_width = int(img.get_width() * scale_factor)
+            new_height = int(img.get_height() * scale_factor)
 
-            surface.blit(
-                img,
-                (self.position[0] + offset_x, self.position[1] + offset_y)
-            )
+            # Skalujemy klatkę animacji
+            img = pygame.transform.scale(img, (new_width, new_height))
+
+            # Rysujemy wyśrodkowany obrazek
+            img_rect = img.get_rect(center=self.position)
+            surface.blit(img, img_rect)
+
+            # Rysujemy klatkę wyśrodkowaną na pozycji obiektu (self.position)
+            img_rect = img.get_rect(center=self.position)
+            surface.blit(img, img_rect)
 
     def set_position(self, x: int, y: int):
         self.position = (x, y)
@@ -236,7 +243,7 @@ if __name__ == "__main__":
 
     mgr = ObjectManager()
 
-    player = SpriteObject('player', 'ludzik.png', x=100, y=100)
+    player = SpriteObject('player', '../ludzik.png', x=100, y=100)
     # MUST supply indices now (required)
     player.add_frames('walk', indices=[0,1,2,3,4,5], cols=3, rows=3, frame_duration=150, loop=True)
     player.add_frames('attack', indices=[6,7,8], cols=3, rows=3, frame_duration=300, loop=False)
