@@ -162,15 +162,9 @@ class Character:
             self.rect,
             2
         )
-
 class Creature(Character):
     def __init__(self, x, y, spritesheet_path=None):
-        super().__init__(
-            x,
-            y,
-            64,
-            spritesheet_path=spritesheet_path
-        )
+        super().__init__(x, y, 64, spritesheet_path=spritesheet_path)
 
         self.hp = 100
         self.power = 0
@@ -182,50 +176,43 @@ class Creature(Character):
         self.vel_y = 0
         self.is_grounded = False
 
-        # =========================================
-        # DOUBLE JUMP
-        # =========================================
+        # System skoków
         self.max_jumps = 2
         self.jumps_left = 2
-        self.jump_cooldown = 0  # Odczekanie między skokami
+        self.jump_cooldown = 0
 
     def jump(self):
-        """Wykonuje skok, jeśli zostały wolne skoki i minął cooldown."""
         if self.jumps_left > 0 and self.jump_cooldown <= 0:
             self.vel_y = self.jump_force
             self.jumps_left -= 1
             self.is_grounded = False
-            self.jump_cooldown = 0.15  # 0.15 sekundy przerwy przed drugim skokiem
+            self.jump_cooldown = 0.15
+
+            # Ustawiamy podstawową moc skoku (1)
+            self.power = 1
 
     def reset_jumps(self):
-        """Odnawia podwójny skok po dotknięciu ziemi."""
+        """Odnawia skoki i resetuje siłę po wylądowaniu."""
         self.is_grounded = True
         self.jumps_left = self.max_jumps
+        self.power = 0  # Po opadnięciu na podłoże moc wraca do 0
 
     def update(self, dt, platforms=None):
         keys = pygame.key.get_pressed()
 
-        # Zmniejszamy licznik cooldownu skoku
         if self.jump_cooldown > 0:
             self.jump_cooldown -= dt
 
-        # =================================================
-        # RUCH POZIOMY (A / D)
-        # =================================================
+        # Ruch A / D
         moving = False
         dx = 0
-
         if keys[pygame.K_a]:
             dx -= self.speed * dt
             moving = True
-
         if keys[pygame.K_d]:
             dx += self.speed * dt
             moving = True
 
-        # =================================================
-        # ANIMACJE (Walk / Idle)
-        # =================================================
         if moving:
             if self.walk_anim:
                 self.play(self.walk_anim, reset=False)
@@ -233,12 +220,10 @@ class Creature(Character):
             if self.idle_anim:
                 self.play(self.idle_anim, reset=False)
 
-        # =================================================
-        # RUCH W OSIACH X (Poziom)
-        # =================================================
         self.pos.x += dx
         self.update_rect()
 
+        # Kolizje X
         if platforms:
             for platform in platforms:
                 p_rect = platform.rect if hasattr(platform, 'rect') else platform
@@ -249,26 +234,28 @@ class Creature(Character):
                         self.rect.left = p_rect.right
                     self.pos.x = self.rect.centerx
 
-        # =================================================
-        # SKOK (Działa bez ograniczenia is_grounded!)
-        # =================================================
+        # Skok (W)
         if keys[pygame.K_w]:
             self.jump()
 
-        # =================================================
-        # GRAWITACJA I SZYBKIE OPADANIE (S)
-        # =================================================
+        # Grawitacja i wyliczanie POWER w zależności od Dropdown (S)
         current_gravity = self.gravity
+
         if not self.is_grounded and keys[pygame.K_s]:
-            current_gravity *= 3
+            current_gravity *= 3  # Szybsze opadanie (Dropdown)
+
+            # Jeśli wykonano 2 skoki (zostało 0 skoków) i wciśnięto S -> Power 3 (Double Jump Dropdown)
+            if self.jumps_left == 0:
+                self.power = 3
+            # Jeśli wykonano 1 skok (został 1 skok) i wciśnięto S -> Power 2 (Standard Dropdown)
+            else:
+                self.power = 2
 
         self.vel_y += current_gravity * dt
         self.pos.y += self.vel_y * dt
         self.update_rect()
 
-        # =================================================
-        # KOLIZJE PIONOWE (Y)
-        # =================================================
+        # Kolizje Y
         self.is_grounded = False
 
         if platforms:
@@ -277,21 +264,16 @@ class Creature(Character):
 
                 if self.rect.colliderect(p_rect):
                     if self.vel_y > 0:
-                        # LĄDOWANIE NA PLATFORMIE
                         self.rect.bottom = p_rect.top
                         self.vel_y = 0
-                        self.reset_jumps()  # Odnawiamy skoki po wylądowaniu!
+                        self.reset_jumps()
 
                     elif self.vel_y < 0:
-                        # UDERZENIE GŁOWĄ OD DOŁU
                         self.rect.top = p_rect.bottom
                         self.vel_y = 0
 
                     self.pos.y = self.rect.centery
 
-        # =================================================
-        # AKTUALIZACJA SPRITE'A ANIMACJI
-        # =================================================
         super().update(int(dt * 1000))
 
 # =========================================================

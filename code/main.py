@@ -71,7 +71,7 @@ door = Door(700, 250, 30, 120, trigger_object=lever) # Drzwi otwierają się dź
 interactive_manager.add(lever)
 interactive_manager.add(door)
 interactive_manager.add(CodePanel(700, 300, code="1234"))
-interactive_manager.add(ScoringButton(490, 490, required_power=0))  # Power 0, żeby działało od razu
+interactive_manager.add(ScoringButton(490, 490, required_power=3))  # Power 0, żeby działało od razu
 interactive_manager.add(LevelGate(800, 400))
 
 # =========================================================
