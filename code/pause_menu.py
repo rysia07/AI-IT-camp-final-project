@@ -72,9 +72,8 @@ class PauseMenu:
             return
         
         # Semi-transparent dark overlay
-        overlay = pygame.Surface((self.width, self.height))
-        overlay.set_alpha(200)
-        overlay.fill((0, 0, 0))
+        overlay = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 180))  # 180 = alpha
         surface.blit(overlay, (0, 0))
         
         # Title
