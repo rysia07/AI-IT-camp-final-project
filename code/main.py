@@ -3,15 +3,7 @@ import pygame
 from LoadLevels import load_level
 
 
-# Importujemy wszystkie potrzebne klasy z pliku Interactive.py
-from Interactive import (
-    Lever,
-    CodePanel,
-    ScoringButton,
-    Door,
-    LevelGate,
-    InteractiveManager
-)
+
 from Characters import Creature, GhostMouse, CharacterManager
 from GUI import MainMenu
 from Platforms import PlatformManager
