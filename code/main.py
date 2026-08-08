@@ -6,6 +6,7 @@ from Interactive import (
     Lever,
     CodePanel,
     ScoringButton,
+    Door,
     LevelGate,
     InteractiveManager
 )
@@ -62,8 +63,13 @@ manager.add("ghost", ghost)
 
 interactive_manager = InteractiveManager()
 
-# Dodajemy obiekty bezpośrednio do menedżera
-interactive_manager.add(Lever(300, 300, 100, 20, direction="left"))
+# Dodajemy obiekty bezpośrednio do menedżeralever =
+
+lever = Lever(300, 300, 100, 20, direction="left")
+door = Door(700, 250, 30, 120, trigger_object=lever) # Drzwi otwierają się dźwignią!
+
+interactive_manager.add(lever)
+interactive_manager.add(door)
 interactive_manager.add(CodePanel(700, 300, code="1234"))
 interactive_manager.add(ScoringButton(490, 490, required_power=0))  # Power 0, żeby działało od razu
 interactive_manager.add(LevelGate(800, 400))
