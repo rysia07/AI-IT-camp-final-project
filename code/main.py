@@ -89,39 +89,10 @@ player.add_anim(
     spritesheet_path="../pictures/Gracz_atak.png",
     scale=0.5
 )
-lever = Lever(
-    300,
-    400,
-    100,
-    20,
-    direction="left"
-)
-lever.
-lever.add_anim(
-    "idle",
-    frames=[0],
-    cols=4,
-    rows=1,
-    speed=100,
-    loop=True,
-    spritesheet_path="../pictures/dźwignia.png",
-    scale=2.0
-)
 
-lever.add_anim(
-    "activate",
-    frames=[0, 1, 2, 3],
-    cols=4,
-    rows=1,
-    speed=100,
-    loop=False,
-    spritesheet_path="../pictures/dźwignia.png",
-    scale=2.0
-)
 
-lever.play("idle")
 
-interactive_manager.add(lever)
+
 
 
 player.set_walk_idle("walk", "idle")
