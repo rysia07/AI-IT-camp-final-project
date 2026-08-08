@@ -10,9 +10,6 @@ from Interactive import (
     LevelGate,
     InteractiveManager
 )
-from Characters import Creature, GhostMouse, CharacterManager
-from GUI import MainMenu
-from Platforms import PlatformManager
 
 # =========================================================
 # INITIALIZATION
@@ -25,6 +22,7 @@ pygame.init()
 WIDTH, HEIGHT = 900, 600
 
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
+screen_state = "normal"
 pygame.display.set_caption("Placeholder")
 
 clock = pygame.time.Clock()
@@ -100,7 +98,7 @@ manager.add("ghost", ghost)
 # INTERACTIVE OBJECTS (Dźwignie, Panele itp.)
 # =========================================================
 
-interactive_manager = InteractiveManager()
+
 
 lever = Lever(300, 300, 100, 20, direction="left")
 door = Door(700, 250, 30, 120, trigger_object=lever)
