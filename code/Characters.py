@@ -194,8 +194,12 @@ class Character:
     # UPDATE
     # =====================================================
 
+<<<<<<< HEAD
     def update(self, dt):
 
+=======
+    def update(self, dt, *args, **kwargs):
+>>>>>>> master
         self.update_rect()
 
         if self.sprite:
@@ -315,6 +319,7 @@ class Creature(Character):
 
             self.is_grounded = False
 
+<<<<<<< HEAD
     # =====================================================
     # UPDATE
     # =====================================================
@@ -325,6 +330,9 @@ class Creature(Character):
         platforms=None
     ):
 
+=======
+    def update(self, dt, platforms=None, *args, **kwargs):
+>>>>>>> master
         keys = pygame.key.get_pressed()
 
         # =================================================
@@ -494,6 +502,7 @@ class GhostMouse(Character):
 
         self.hp = 50
 
+<<<<<<< HEAD
     # =====================================================
     # UPDATE
     # =====================================================
@@ -520,12 +529,28 @@ class GhostMouse(Character):
             mouse_pos.x
             - self.pos.x
         )
+=======
+    def update(self, dt, platforms=None, *args, **kwargs):
+        self.last_pos = self.pos.copy()
+        mouse_pos = pygame.Vector2(pygame.mouse.get_pos())
+>>>>>>> master
 
         self.pos.x += dx
 
         self.update_rect()
 
         if platforms:
+<<<<<<< HEAD
+=======
+            for platform in platforms:
+                plat_rect = platform.rect if hasattr(platform, "rect") else platform
+                if self.rect.colliderect(plat_rect):
+                    if dx > 0:  # Ruch w prawo
+                        self.rect.right = plat_rect.left
+                    elif dx < 0:  # Ruch w lewo
+                        self.rect.left = plat_rect.right
+                    self.pos.x = self.rect.centerx
+>>>>>>> master
 
             for platform in platforms:
 
@@ -569,6 +594,17 @@ class GhostMouse(Character):
         self.update_rect()
 
         if platforms:
+<<<<<<< HEAD
+=======
+            for platform in platforms:
+                plat_rect = platform.rect if hasattr(platform, "rect") else platform
+                if self.rect.colliderect(plat_rect):
+                    if dy > 0:  # Ruch w dół
+                        self.rect.bottom = plat_rect.top
+                    elif dy < 0:  # Ruch w górę
+                        self.rect.top = plat_rect.bottom
+                    self.pos.y = self.rect.centery
+>>>>>>> master
 
             for platform in platforms:
 
@@ -604,6 +640,7 @@ class GhostMouse(Character):
 
 
 # =========================================================
+<<<<<<< HEAD
 # CHARACTER MANAGER
 # =========================================================
 
@@ -820,6 +857,8 @@ class ProjectileManager:
 
 
 # =========================================================
+=======
+>>>>>>> master
 # SHOOTING ENEMY
 # =========================================================
 
@@ -865,6 +904,7 @@ class ShootingEnemy(Character):
 
         self.is_grounded = False
 
+<<<<<<< HEAD
     # =====================================================
     # SHOOT
     # =====================================================
@@ -889,11 +929,21 @@ class ShootingEnemy(Character):
             dx ** 2
             + dy ** 2
         ) ** 0.5
+=======
+    def shoot(self, target_x: float, target_y: float):
+        dx = target_x - self.pos.x
+        dy = target_y - self.pos.y
+        distance = (dx**2 + dy**2)**0.5
+>>>>>>> master
 
         if distance > 0:
 
             dx /= distance
             dy /= distance
+        else:
+            dx, dy = 1, 0
+
+        self.shoot_cooldown = self.shoot_interval
 
         return Projectile(
             self.pos.x,
@@ -923,6 +973,7 @@ class ShootingEnemy(Character):
 
         return self.hp > 0
 
+<<<<<<< HEAD
     # =====================================================
     # UPDATE
     # =====================================================
@@ -934,6 +985,9 @@ class ShootingEnemy(Character):
         platforms=None
     ):
 
+=======
+    def update(self, dt: float, player_pos: pygame.Vector2 = None, platforms=None, *args, **kwargs):
+>>>>>>> master
         self.shoot_cooldown -= dt
 
         dx = 0
@@ -943,6 +997,7 @@ class ShootingEnemy(Character):
         # =================================================
 
         if player_pos:
+<<<<<<< HEAD
 
             dist_to_player = (
                 self.pos - player_pos
@@ -975,6 +1030,14 @@ class ShootingEnemy(Character):
                     else -1
                 )
 
+=======
+            dist_vec = player_pos - self.pos
+            dist_to_player = dist_vec.length()
+            if dist_to_player < self.detection_range and dist_to_player > 0:
+                direction = dist_vec.normalize()
+                dx = direction.x * self.speed * dt
+                self.direction = 1 if dx >= 0 else -1
+>>>>>>> master
             else:
 
                 dx = (
@@ -1110,6 +1173,7 @@ class ShootingEnemy(Character):
 
         if abs(dx) > self.movement_threshold:
 
+<<<<<<< HEAD
             if self.walk_anim:
 
                 self.play(
@@ -1129,3 +1193,111 @@ class ShootingEnemy(Character):
         super().update(
             dt
         )
+=======
+        super().update(dt)
+
+
+# =========================================================
+# CHARACTER MANAGER
+# =========================================================
+class CharacterManager:
+    def __init__(self):
+        self.characters = {}
+
+    def add(self, name, character):
+        self.characters[name] = character
+
+    def remove(self, name):
+        if name in self.characters:
+            del self.characters[name]
+
+    def get(self, name):
+        return self.characters.get(name)
+
+    def update_all(self, dt, platforms=None, player_pos=None):
+        for character in self.characters.values():
+            if isinstance(character, ShootingEnemy):
+                character.update(dt, player_pos=player_pos, platforms=platforms)
+            elif isinstance(character, (Creature, GhostMouse)):
+                character.update(dt, platforms=platforms)
+            else:
+                character.update(dt)
+
+    def draw_all(self, surface):
+        for character in self.characters.values():
+            character.draw(surface)
+
+
+# =========================================================
+# PROJECTILE & MANAGER
+# =========================================================
+
+class Projectile:
+    def __init__(self, x: float, y: float, vx: float, vy: float, damage: int = 10, color: str = "yellow", lifetime: float = 5.0):
+        self.pos = pygame.Vector2(x, y)
+        self.vel = pygame.Vector2(vx, vy)
+        self.radius = 4
+        self.damage = damage
+        self.color = color
+        self.lifetime = lifetime
+        self.age = 0.0
+        self.is_dead = False
+
+        self.rect = pygame.Rect(0, 0, self.radius * 2, self.radius * 2)
+        self.rect.center = (int(self.pos.x), int(self.pos.y))
+
+    def update(self, dt: float):
+        self.age += dt
+        self.pos += self.vel * dt
+        self.rect.center = (int(self.pos.x), int(self.pos.y))
+
+        if self.age >= self.lifetime:
+            self.is_dead = True
+
+    def is_alive(self) -> bool:
+        return not self.is_dead and self.age < self.lifetime
+
+    def draw(self, surface):
+        pygame.draw.circle(surface, self.color, (int(self.pos.x), int(self.pos.y)), self.radius)
+
+
+class ProjectileManager:
+    def __init__(self):
+        self.projectiles = []
+
+    def add(self, projectile):
+        if projectile:
+            self.projectiles.append(projectile)
+
+    def update(self, dt: float, *args, **kwargs):
+        """Aktualizuje pociski i usuwa nieaktywne/martwe."""
+        for projectile in self.projectiles[:]:
+            projectile.update(dt)
+
+            if not projectile.is_alive() or getattr(projectile, "is_dead", False):
+                self.projectiles.remove(projectile)
+
+    def draw_all(self, surface):
+        for projectile in self.projectiles:
+            projectile.draw(surface)
+
+    def get_projectiles(self):
+        return self.projectiles.copy()
+
+    def clear(self):
+        self.projectiles.clear()
+
+    # --- Metody Magiczne ---
+
+    def __len__(self):
+        return len(self.projectiles)
+
+    def __iter__(self):
+        return iter(self.projectiles)
+
+    def __getitem__(self, index):
+        return self.projectiles[index]
+
+    def __bool__(self):
+        return bool(self.projectiles)
+>>>>>>> master

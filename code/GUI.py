@@ -117,8 +117,9 @@ class MainMenu(BaseMenu):
         start_y = 180
         spacing = 65
 
+        # "Graj" kieruje do wyboru poziomów ("level_select")
         self.buttons = [
-            Button(center_x, start_y, btn_w, btn_h, "Graj", "play"),
+            Button(center_x, start_y, btn_w, btn_h, "Graj", "level_select"),
             Button(center_x, start_y + spacing, btn_w, btn_h, "Opcje", "options"),
             Button(center_x, start_y + spacing * 2, btn_w, btn_h, "Autorzy", "credits"),
             Button(center_x, start_y + spacing * 3, btn_w, btn_h, "Wyjście", "quit")
@@ -128,18 +129,43 @@ class MainMenu(BaseMenu):
         return self.handle_input(pos, mouse_buttons)
 
 
+class LevelSelectMenu(BaseMenu):
+    """Menu wyboru poziomu."""
+
+    def __init__(self, width, height, level_list=None):
+        super().__init__(width, height, "WYBÓR POZIOMU")
+        if level_list is None:
+            level_list = ["level.txt", "level2.txt", "level3.txt"]
+
+        self.buttons = []
+        btn_w, btn_h = 220, 50
+        center_x = width // 2 - btn_w // 2
+        start_y = 180
+        spacing = 60
+
+        for i, lvl_name in enumerate(level_list):
+            action_name = f"load_{lvl_name}"
+            display_name = f"Poziom {i + 1}"
+            self.buttons.append(
+                Button(center_x, start_y + i * spacing, btn_w, btn_h, display_name, action_name)
+            )
+
+        # Przyciski Powrót na dole
+        self.buttons.append(
+            Button(center_x, start_y + len(level_list) * spacing + 20, btn_w, btn_h, "Powrót", "back")
+        )
+
+
 class OptionsMenu(BaseMenu):
     def __init__(self, width, height):
         super().__init__(width, height, "OPCJE")
         btn_w, btn_h = 200, 50
         center_x = width // 2 - btn_w // 2
 
-        # Suwak głośności
         slider_w, slider_h = 300, 16
         slider_x = width // 2 - slider_w // 2
-        self.volume_slider = Slider(slider_x, 200, slider_w, slider_h, initial_val=0.7)
+        self.volume_slider = Slider(slider_x, 180, slider_w, slider_h, initial_val=0.7)
 
-        # Informacje o sterowaniu
         self.controls_info = [
             "--- STEROWANIE ---",
             "A / D  lub  Strzałki:  Ruch w lewo / prawo",
@@ -159,12 +185,9 @@ class OptionsMenu(BaseMenu):
 
     def draw(self, surface):
         super().draw(surface)
-
-        # Rysowanie suwaka głośności
         self.volume_slider.draw(surface, self.btn_font)
 
-        # Rysowanie sekcji Sterowanie
-        start_y = 260
+        start_y = 240
         for i, line in enumerate(self.controls_info):
             color = (255, 215, 0) if i == 0 else (220, 220, 220)
             txt_surf = self.info_font.render(line, True, color)
@@ -219,7 +242,6 @@ class CreditsMenu(BaseMenu):
 
     def draw(self, surface):
         super().draw(surface)
-
         start_y = 180
         for i, line in enumerate(self.credits_lines):
             txt_surf = self.info_font.render(line, True, (220, 220, 220))
@@ -250,6 +272,6 @@ class VictoryMenu(BaseMenu):
         spacing = 70
 
         self.buttons = [
-            Button(center_x, start_y, btn_w, btn_h, "Następny Poziom", "next"),
+            Button(center_x, start_y, btn_w, btn_h, "Wybór Poziomu", "level_select"),
             Button(center_x, start_y + spacing, btn_w, btn_h, "Menu Główna", "menu")
         ]
