@@ -1,19 +1,23 @@
+
 import sys
-import os
+
 import pygame
 
 from LoadLevels import load_level
 from Platforms import PlatformManager
+
 from Characters import (
     Creature,
     GhostMouse,
     CharacterManager,
     ProjectileManager
 )
+
 from Interactive import CodePanel
 
 from GUI import (
     MainMenu,
+    LevelSelectMenu,
     OptionsMenu,
     CreditsMenu,
     FailureMenu,
@@ -28,8 +32,14 @@ from pause_menu import PauseMenu
 # =========================================================
 
 FPS = 60
+
 WIDTH = 900
 HEIGHT = 600
+
+
+# =========================================================
+# STANY GRY
+# =========================================================
 
 MENU = 0
 PLAYING = 1
@@ -38,531 +48,11 @@ CREDITS = 3
 FAILURE = 4
 VICTORY = 5
 PAUSE = 6
+LEVEL_SELECT = 7
 
 
 # =========================================================
-# ŚCIEŻKI DO GRAFIKI
-# =========================================================
-
-PICTURES = "../pictures"
-
-BACKGROUND_PATH = os.path.join(
-    PICTURES,
-    "background.png"
-)
-
-DOOR_CLOSED_PATH = os.path.join(
-    PICTURES,
-    "door_closed.png"
-)
-
-DOOR_OPEN_PATH = os.path.join(
-    PICTURES,
-    "door_open.png"
-)
-
-LEVER_OFF_PATH = os.path.join(
-    PICTURES,
-    "lever_off.png"
-)
-
-LEVER_ON_PATH = os.path.join(
-    PICTURES,
-    "lever_on.png"
-)
-
-SCORING_PLATE_PATH = os.path.join(
-    PICTURES,
-    "scoring_plate.png"
-)
-
-SCORING_PLATE_ACTIVE_PATH = os.path.join(
-    PICTURES,
-    "scoring_plate_active.png"
-)
-
-CODE_PANEL_PATH = os.path.join(
-    PICTURES,
-    "code_panel.png"
-)
-
-
-# =========================================================
-# POMOCNICZE - ŁADOWANIE GRAFIKI
-# =========================================================
-
-def load_image(path, alpha=True):
-
-    """
-    Ładuje obraz.
-
-    Jeżeli pliku nie ma albo wystąpi błąd,
-    zwraca None zamiast wywalać całą grę.
-    """
-
-    if not os.path.exists(path):
-
-        print(
-            f"[ART] Brak pliku: {path}"
-        )
-
-        return None
-
-    try:
-
-        image = pygame.image.load(path)
-
-        if alpha:
-
-            image = image.convert_alpha()
-
-        else:
-
-            image = image.convert()
-
-        return image
-
-    except pygame.error as error:
-
-        print(
-            f"[ART] Nie można załadować {path}: {error}"
-        )
-
-        return None
-
-
-# =========================================================
-# ART MANAGER
-# =========================================================
-
-class ArtManager:
-
-    """
-    Zarządza grafiką tła oraz grafikami obiektów interaktywnych.
-
-    Nie zmienia logiki obiektów z Interactive.py.
-    Tylko odczytuje ich stan i rysuje odpowiednią grafikę.
-    """
-
-    def __init__(self, screen_width, screen_height):
-
-        self.screen_width = screen_width
-        self.screen_height = screen_height
-
-        # -------------------------------------------------
-        # BACKGROUND
-        # -------------------------------------------------
-
-        self.background = load_image(
-            BACKGROUND_PATH,
-            alpha=False
-        )
-
-        self.background_scaled = None
-
-        if self.background:
-
-            self.background_scaled = pygame.transform.scale(
-                self.background,
-                (
-                    self.screen_width,
-                    self.screen_height
-                )
-            )
-
-        # -------------------------------------------------
-        # DOORS
-        # -------------------------------------------------
-
-        self.door_closed = load_image(
-            DOOR_CLOSED_PATH
-        )
-
-        self.door_open = load_image(
-            DOOR_OPEN_PATH
-        )
-
-        # -------------------------------------------------
-        # LEVERS
-        # -------------------------------------------------
-
-        self.lever_off = load_image(
-            LEVER_OFF_PATH
-        )
-
-        self.lever_on = load_image(
-            LEVER_ON_PATH
-        )
-
-        # -------------------------------------------------
-        # SCORING PLATES
-        # -------------------------------------------------
-
-        self.scoring_plate = load_image(
-            SCORING_PLATE_PATH
-        )
-
-        self.scoring_plate_active = load_image(
-            SCORING_PLATE_ACTIVE_PATH
-        )
-
-        # -------------------------------------------------
-        # CODE PANEL
-        # -------------------------------------------------
-
-        self.code_panel = load_image(
-            CODE_PANEL_PATH
-        )
-
-    # =====================================================
-    # BACKGROUND
-    # =====================================================
-
-    def draw_background(self, screen):
-
-        if self.background_scaled:
-
-            screen.blit(
-                self.background_scaled,
-                (0, 0)
-            )
-
-        else:
-
-            # Fallback jeżeli nie ma background.png
-
-            screen.fill(
-                (30, 30, 30)
-            )
-
-    # =====================================================
-    # RECT OBIEKTU
-    # =====================================================
-
-    @staticmethod
-    def get_object_rect(obj):
-
-        # Najpierw standardowe rect
-
-        if hasattr(obj, "rect"):
-
-            return obj.rect
-
-        # Niektóre klasy mogą używać hitbox
-
-        if hasattr(obj, "hitbox"):
-
-            return obj.hitbox
-
-        # Albo collider
-
-        if hasattr(obj, "collider"):
-
-            return obj.collider
-
-        return None
-
-    # =====================================================
-    # STAN BOOLEAN
-    # =====================================================
-
-    @staticmethod
-    def get_bool_state(obj, names):
-
-        """
-        Szuka pierwszego istniejącego atrybutu
-        z listy names.
-        """
-
-        for name in names:
-
-            if hasattr(obj, name):
-
-                value = getattr(
-                    obj,
-                    name
-                )
-
-                if isinstance(value, bool):
-
-                    return value
-
-        return False
-
-    # =====================================================
-    # NAZWA KLASY
-    # =====================================================
-
-    @staticmethod
-    def get_object_type(obj):
-
-        """
-        Pobiera nazwę klasy obiektu.
-
-        Dzięki temu nie musimy importować:
-        Door
-        Lever
-        ScoringPlate
-
-        itd.
-        """
-
-        return obj.__class__.__name__.lower()
-
-    # =====================================================
-    # DOPASOWANIE GRAFIKI DO RECT
-    # =====================================================
-
-    @staticmethod
-    def draw_image_to_rect(
-        screen,
-        image,
-        rect
-    ):
-
-        if image is None:
-            return
-
-        if rect is None:
-            return
-
-        # Skalowanie grafiki do rozmiaru obiektu
-
-        scaled = pygame.transform.smoothscale(
-            image,
-            (
-                max(1, rect.width),
-                max(1, rect.height)
-            )
-        )
-
-        screen.blit(
-            scaled,
-            rect.topleft
-        )
-
-    # =====================================================
-    # DRAW DOOR
-    # =====================================================
-
-    def draw_door(
-        self,
-        screen,
-        obj
-    ):
-
-        rect = self.get_object_rect(obj)
-
-        if rect is None:
-            return
-
-        is_open = self.get_bool_state(
-            obj,
-            [
-                "is_open",
-                "opened",
-                "open",
-                "active"
-            ]
-        )
-
-        if is_open:
-
-            image = self.door_open
-
-        else:
-
-            image = self.door_closed
-
-        self.draw_image_to_rect(
-            screen,
-            image,
-            rect
-        )
-
-    # =====================================================
-    # DRAW LEVER
-    # =====================================================
-
-    def draw_lever(
-        self,
-        screen,
-        obj
-    ):
-
-        rect = self.get_object_rect(obj)
-
-        if rect is None:
-            return
-
-        is_on = self.get_bool_state(
-            obj,
-            [
-                "activated",
-                "active",
-                "is_active",
-                "on",
-                "is_on",
-                "triggered",
-                "used"
-            ]
-        )
-
-        if is_on:
-
-            image = self.lever_on
-
-        else:
-
-            image = self.lever_off
-
-        self.draw_image_to_rect(
-            screen,
-            image,
-            rect
-        )
-
-    # =====================================================
-    # DRAW SCORING PLATE
-    # =====================================================
-
-    def draw_scoring_plate(
-        self,
-        screen,
-        obj
-    ):
-
-        rect = self.get_object_rect(obj)
-
-        if rect is None:
-            return
-
-        active = self.get_bool_state(
-            obj,
-            [
-                "pressed",
-                "active",
-                "is_active",
-                "activated",
-                "triggered",
-                "occupied"
-            ]
-        )
-
-        if active:
-
-            image = self.scoring_plate_active
-
-        else:
-
-            image = self.scoring_plate
-
-        self.draw_image_to_rect(
-            screen,
-            image,
-            rect
-        )
-
-    # =====================================================
-    # DRAW CODE PANEL
-    # =====================================================
-
-    def draw_code_panel(
-        self,
-        screen,
-        obj
-    ):
-
-        rect = self.get_object_rect(obj)
-
-        if rect is None:
-            return
-
-        self.draw_image_to_rect(
-            screen,
-            self.code_panel,
-            rect
-        )
-
-    # =====================================================
-    # DRAW INTERACTIVE ART
-    # =====================================================
-
-    def draw_interactive_art(
-        self,
-        screen,
-        interactive_objects
-    ):
-
-        for obj in interactive_objects:
-
-            object_type = self.get_object_type(
-                obj
-            )
-
-            # -------------------------------------------------
-            # DOOR
-            # -------------------------------------------------
-
-            if (
-                "door" in object_type
-                or "drzwi" in object_type
-            ):
-
-                self.draw_door(
-                    screen,
-                    obj
-                )
-
-            # -------------------------------------------------
-            # LEVER
-            # -------------------------------------------------
-
-            elif (
-                "lever" in object_type
-                or "switch" in object_type
-                or "dzwign" in object_type
-            ):
-
-                self.draw_lever(
-                    screen,
-                    obj
-                )
-
-            # -------------------------------------------------
-            # SCORING PLATE
-            # -------------------------------------------------
-
-            elif (
-                "scoringplate" in object_type
-                or "scoring_plate" in object_type
-                or "pressureplate" in object_type
-                or "pressure_plate" in object_type
-                or "plate" in object_type
-            ):
-
-                self.draw_scoring_plate(
-                    screen,
-                    obj
-                )
-
-            # -------------------------------------------------
-            # CODE PANEL
-            # -------------------------------------------------
-
-            elif isinstance(
-                obj,
-                CodePanel
-            ):
-
-                self.draw_code_panel(
-                    screen,
-                    obj
-                )
-
-
-# =========================================================
-# TWORZENIE GRACZA
+# PLAYER
 # =========================================================
 
 def create_player(start_pos):
@@ -573,64 +63,63 @@ def create_player(start_pos):
         "../pictures/ludzik.png"
     )
 
-    # -----------------------------------------------------
-    # IDLE
-    # -----------------------------------------------------
+    try:
 
-    player.add_anim(
-        "idle",
-        [0],
-        3,
-        3,
-        speed=100,
-        priority=Creature.PRIORITY_IDLE,
-        spritesheet_path="../pictures/ludzik.png",
-        scale=2.0
-    )
+        player.add_anim(
+            "idle",
+            [0],
+            3,
+            3,
+            speed=100,
+            priority=Creature.PRIORITY_IDLE,
+            spritesheet_path="../pictures/ludzik.png",
+            scale=2.0
+        )
 
-    # -----------------------------------------------------
-    # WALK
-    # -----------------------------------------------------
+        player.add_anim(
+            "walk",
+            [0, 1, 2, 3, 4, 5],
+            3,
+            3,
+            speed=150,
+            priority=Creature.PRIORITY_WALK,
+            spritesheet_path="../pictures/ludzik.png",
+            scale=2.0
+        )
 
-    player.add_anim(
-        "walk",
-        [0, 1, 2, 3, 4, 5],
-        3,
-        3,
-        speed=120,
-        priority=Creature.PRIORITY_WALK,
-        spritesheet_path="../pictures/ludzik.png",
-        scale=2.0
-    )
+        player.add_anim(
+            "attack",
+            list(range(19)),
+            5,
+            4,
+            speed=35,
+            loop=False,
+            priority=Creature.PRIORITY_ATTACK,
+            spritesheet_path="../pictures/Gracz_atak.png",
+            scale=0.5
+        )
 
-    # -----------------------------------------------------
-    # ATTACK
-    # -----------------------------------------------------
+    except Exception as error:
 
-    player.add_anim(
-        "attack",
-        list(range(19)),
-        5,
-        4,
-        speed=35,
-        loop=False,
-        priority=Creature.PRIORITY_ATTACK,
-        spritesheet_path="../pictures/Gracz_atak.png",
-        scale=0.5
-    )
+        print(
+            "⚠️ Uwaga podczas ładowania "
+            f"animacji gracza: {error}"
+        )
 
     player.set_walk_idle(
         "walk",
         "idle"
     )
 
-    player.play("idle")
+    player.play(
+        "idle"
+    )
 
     return player
 
 
 # =========================================================
-# RESET GRY
+# RESET
 # =========================================================
 
 def reset_game(
@@ -639,219 +128,165 @@ def reset_game(
     spawn_pos
 ):
 
-    # -----------------------------------------------------
-    # PLAYER
-    # -----------------------------------------------------
+    player.pos.update(
+        spawn_pos[0],
+        spawn_pos[1]
+    )
+
+    player.update_rect()
 
     player.hp = 100
 
-    player.pos.x = spawn_pos[0]
-    player.pos.y = spawn_pos[1]
-
+    player.vel_x = 0
     player.vel_y = 0
+
+    player.is_grounded = False
 
     player.jumps_left = (
         player.max_jumps
     )
 
-    player.is_grounded = False
-
-    # -----------------------------------------------------
-    # RESET ANIMATION
-    # -----------------------------------------------------
-
-    player.current_priority = 0
-
-    if player.sprite:
-
-        for animation in (
-            player.sprite.animations.values()
-        ):
-
-            animation.reset()
-
-    player.play("idle")
-
-    # -----------------------------------------------------
-    # GHOST
-    # -----------------------------------------------------
-
-    ghost.hp = 50
-
-    ghost.pos.x = spawn_pos[0]
-    ghost.pos.y = spawn_pos[1]
+    ghost.pos.update(
+        spawn_pos[0],
+        spawn_pos[1]
+    )
 
     ghost.update_rect()
 
+    ghost.last_pos = (
+        ghost.pos.copy()
+    )
+
+    ghost.hp = 50
+
 
 # =========================================================
-# KOLIZJE DUCHA
+# GHOST COLLISIONS
 # =========================================================
+
+def get_rect(obj):
+
+    if hasattr(obj, "rect"):
+
+        return obj.rect
+
+    return obj
+
 
 def move_ghost_with_collisions(
     ghost,
     dx,
     dy,
-    platforms
+    obstacles
 ):
 
-    width = getattr(
-        ghost,
-        "width",
-        30
-    )
+    """
+    Poruszanie ducha myszką.
 
-    height = getattr(
-        ghost,
-        "height",
-        30
-    )
+    POS ducha = środek hitboxa.
 
-    ghost_rect = pygame.Rect(
-        int(
-            ghost.pos.x
-            - width / 2
-        ),
-        int(
-            ghost.pos.y
-            - height / 2
-        ),
-        width,
-        height
+    last_pos musi zostać ustawione przed
+    wywołaniem tej funkcji.
+    """
+
+    ghost_rect = (
+        ghost.rect.copy()
     )
 
     # =====================================================
-    # X
+    # RUCH X
     # =====================================================
 
     ghost_rect.x += int(dx)
 
-    for p in platforms:
+    for obstacle in obstacles:
 
-        if hasattr(
-            p,
-            "rect"
+        obstacle_rect = get_rect(
+            obstacle
+        )
+
+        if not ghost_rect.colliderect(
+            obstacle_rect
         ):
 
-            plat_rect = p.rect
+            continue
 
-        else:
+        if dx > 0:
 
-            plat_rect = pygame.Rect(
-                p[0],
-                p[1],
-                p[2],
-                p[3]
+            ghost_rect.right = (
+                obstacle_rect.left
             )
 
-        if ghost_rect.colliderect(
-            plat_rect
-        ):
+        elif dx < 0:
 
-            if dx > 0:
-
-                ghost_rect.right = (
-                    plat_rect.left
-                )
-
-            elif dx < 0:
-
-                ghost_rect.left = (
-                    plat_rect.right
-                )
+            ghost_rect.left = (
+                obstacle_rect.right
+            )
 
     # =====================================================
-    # Y
+    # RUCH Y
     # =====================================================
 
     ghost_rect.y += int(dy)
 
-    for p in platforms:
+    for obstacle in obstacles:
 
-        if hasattr(
-            p,
-            "rect"
+        obstacle_rect = get_rect(
+            obstacle
+        )
+
+        if not ghost_rect.colliderect(
+            obstacle_rect
         ):
 
-            plat_rect = p.rect
+            continue
 
-        else:
+        if dy > 0:
 
-            plat_rect = pygame.Rect(
-                p[0],
-                p[1],
-                p[2],
-                p[3]
+            ghost_rect.bottom = (
+                obstacle_rect.top
             )
 
-        if ghost_rect.colliderect(
-            plat_rect
-        ):
+        elif dy < 0:
 
-            if dy > 0:
-
-                ghost_rect.bottom = (
-                    plat_rect.top
-                )
-
-            elif dy < 0:
-
-                ghost_rect.top = (
-                    plat_rect.bottom
-                )
+            ghost_rect.top = (
+                obstacle_rect.bottom
+            )
 
     # =====================================================
-    # POZYCJA
+    # SYNCHRONIZACJA
     # =====================================================
+
+    ghost.rect = ghost_rect
 
     ghost.pos.x = (
-        ghost_rect.centerx
+        float(ghost_rect.centerx)
     )
 
     ghost.pos.y = (
-        ghost_rect.centery
+        float(ghost_rect.centery)
     )
 
-    ghost.update_rect()
-
 
 # =========================================================
-# MAIN
+# LOAD LEVEL
 # =========================================================
 
-def main():
+def load_selected_level(
+    level_filename
+):
 
-    pygame.init()
+    try:
 
-    screen = pygame.display.set_mode(
-        (
-            WIDTH,
-            HEIGHT
+        level = load_level(
+            f"../levels/{level_filename}"
         )
-    )
 
-    pygame.display.set_caption(
-        "Alien space"
-    )
+    except FileNotFoundError:
 
-    clock = pygame.time.Clock()
-
-    # =====================================================
-    # ART
-    # =====================================================
-
-    art_manager = ArtManager(
-        WIDTH,
-        HEIGHT
-    )
-
-    # =====================================================
-    # LEVEL
-    # =====================================================
-
-    level = load_level(
-        "../levels/level.txt"
-    )
+        level = load_level(
+            level_filename
+        )
 
     interactive_mgr = (
         level.interactive_manager
@@ -862,11 +297,9 @@ def main():
         level.platforms
     )
 
-    projectile_mgr = ProjectileManager()
-
-    # =====================================================
-    # POSTACIE
-    # =====================================================
+    projectile_mgr = (
+        ProjectileManager()
+    )
 
     player = create_player(
         level.player_pos
@@ -875,6 +308,12 @@ def main():
     ghost = GhostMouse(
         level.player_pos[0],
         level.player_pos[1]
+    )
+
+    ghost.update_rect()
+
+    ghost.last_pos = (
+        ghost.pos.copy()
     )
 
     char_mgr = CharacterManager()
@@ -889,13 +328,73 @@ def main():
         ghost
     )
 
+    return (
+        level,
+        interactive_mgr,
+        platform_mgr,
+        projectile_mgr,
+        player,
+        ghost,
+        char_mgr
+    )
+
+
+# =========================================================
+# MAIN
+# =========================================================
+
+def main():
+
+    pygame.init()
+
+    screen = pygame.display.set_mode(
+        (WIDTH, HEIGHT)
+    )
+
+    pygame.display.set_caption(
+        "Alien Space"
+    )
+
+    clock = pygame.time.Clock()
+
     # =====================================================
-    # MENU
+    # LEVEL
     # =====================================================
+
+    current_level_file = (
+        "level1.txt"
+    )
+
+    (
+        level,
+        interactive_mgr,
+        platform_mgr,
+        projectile_mgr,
+        player,
+        ghost,
+        char_mgr
+    ) = load_selected_level(
+        current_level_file
+    )
+
+    # =====================================================
+    # MENUS
+    # =====================================================
+
+    available_levels = [
+        "level1.txt",
+        "level2.txt"
+    ]
 
     main_menu = MainMenu(
         WIDTH,
         HEIGHT
+    )
+
+    level_select_menu = LevelSelectMenu(
+        WIDTH,
+        HEIGHT,
+        available_levels
     )
 
     options_menu = OptionsMenu(
@@ -924,25 +423,22 @@ def main():
     )
 
     # =====================================================
-    # STAN
+    # GAME STATE
     # =====================================================
 
     current_state = MENU
+
     previous_state = MENU
 
     running = True
 
-    attack_locked = False
-
     pygame.mouse.get_rel()
 
     # =====================================================
-    # PĘTLA
+    # GAME LOOP
     # =====================================================
 
     while running:
-
-        # dt w sekundach
 
         dt = (
             clock.tick(FPS)
@@ -953,7 +449,7 @@ def main():
         mouse_dy = 0
 
         # =================================================
-        # EVENTY
+        # INPUT
         # =================================================
 
         for event in pygame.event.get():
@@ -972,20 +468,22 @@ def main():
 
             if current_state == OPTIONS:
 
-                options_menu.handle_event(
-                    event
-                )
+                if hasattr(
+                    options_menu,
+                    "handle_event"
+                ):
 
-            # =================================================
+                    options_menu.handle_event(
+                        event
+                    )
+
+            # -------------------------------------------------
             # KEYBOARD
-            # =================================================
+            # -------------------------------------------------
 
             if event.type == pygame.KEYDOWN:
 
-                # -------------------------------------------------
                 # ESC
-                # -------------------------------------------------
-
                 if event.key == pygame.K_ESCAPE:
 
                     if current_state == PLAYING:
@@ -1018,33 +516,34 @@ def main():
 
                         pygame.mouse.get_rel()
 
-                # -------------------------------------------------
-                # GAME KEYS
-                # -------------------------------------------------
-
+                # Gameplay keys
                 if current_state == PLAYING:
 
-                    # JUMP
-
-                    if event.key == pygame.K_w:
+                    # Jump
+                    if event.key in (
+                        pygame.K_w,
+                        pygame.K_UP,
+                        pygame.K_SPACE
+                    ):
 
                         player.jump()
 
-                    # ATTACK
+                    # Attack
+                    if (
+                        event.key == pygame.K_2
+                        and hasattr(
+                            player,
+                            "play"
+                        )
+                    ):
 
-                    if event.key == pygame.K_2:
+                        player.play(
+                            "attack"
+                        )
 
-                        if not player.is_attacking():
-
-                            player.play(
-                                "attack"
-                            )
-
-                            attack_locked = True
-
-            # =================================================
+            # -------------------------------------------------
             # MOUSE MOTION
-            # =================================================
+            # -------------------------------------------------
 
             elif event.type == pygame.MOUSEMOTION:
 
@@ -1055,9 +554,9 @@ def main():
                     mouse_dx += dx
                     mouse_dy += dy
 
-            # =================================================
+            # -------------------------------------------------
             # LEFT CLICK
-            # =================================================
+            # -------------------------------------------------
 
             elif (
                 event.type
@@ -1065,36 +564,87 @@ def main():
                 and event.button == 1
             ):
 
-                # -------------------------------------------------
-                # PLAYING
-                # -------------------------------------------------
-
                 if current_state == PLAYING:
 
                     interactive_mgr.handle_event_all(
                         event
                     )
 
-                # -------------------------------------------------
-                # MENU
-                # -------------------------------------------------
-
                 elif current_state == MENU:
 
-                    action = main_menu.handle_click(
-                        event.pos,
-                        (1, 0, 0)
+                    action = (
+                        main_menu.handle_click(
+                            event.pos,
+                            (1, 0, 0)
+                        )
                     )
 
-                    if action == "play":
+                    if action == "level_select":
 
-                        reset_game(
-                            player,
-                            ghost,
-                            level.player_pos
+                        previous_state = MENU
+
+                        current_state = (
+                            LEVEL_SELECT
                         )
 
-                        attack_locked = False
+                    elif action == "options":
+
+                        previous_state = MENU
+
+                        current_state = (
+                            OPTIONS
+                        )
+
+                    elif action == "credits":
+
+                        current_state = CREDITS
+
+                    elif action == "quit":
+
+                        running = False
+
+                elif current_state == LEVEL_SELECT:
+
+                    action = (
+                        level_select_menu.handle_input(
+                            event.pos,
+                            (1, 0, 0)
+                        )
+                    )
+
+                    if action == "back":
+
+                        current_state = (
+                            previous_state
+                        )
+
+                    elif (
+                        action
+                        and action.startswith("load_")
+                    ):
+
+                        level_file = (
+                            action.replace(
+                                "load_",
+                                ""
+                            )
+                        )
+
+                        current_level_file = (
+                            level_file
+                        )
+
+                        (
+                            level,
+                            interactive_mgr,
+                            platform_mgr,
+                            projectile_mgr,
+                            player,
+                            ghost,
+                            char_mgr
+                        ) = load_selected_level(
+                            current_level_file
+                        )
 
                         pygame.mouse.set_visible(
                             False
@@ -1108,29 +658,13 @@ def main():
 
                         current_state = PLAYING
 
-                    elif action == "options":
-
-                        previous_state = MENU
-
-                        current_state = OPTIONS
-
-                    elif action == "credits":
-
-                        current_state = CREDITS
-
-                    elif action == "quit":
-
-                        running = False
-
-                # -------------------------------------------------
-                # PAUSE
-                # -------------------------------------------------
-
                 elif current_state == PAUSE:
 
-                    action = pause_menu.handle_input(
-                        event.pos,
-                        (1, 0, 0)
+                    action = (
+                        pause_menu.handle_input(
+                            event.pos,
+                            (1, 0, 0)
+                        )
                     )
 
                     if action == "resume":
@@ -1148,6 +682,16 @@ def main():
                         pygame.mouse.get_rel()
 
                         current_state = PLAYING
+
+                    elif action == "level_select":
+
+                        pause_menu.active = False
+
+                        previous_state = PAUSE
+
+                        current_state = (
+                            LEVEL_SELECT
+                        )
 
                     elif action == "options":
 
@@ -1169,15 +713,13 @@ def main():
 
                         current_state = MENU
 
-                # -------------------------------------------------
-                # OPTIONS
-                # -------------------------------------------------
-
                 elif current_state == OPTIONS:
 
-                    action = options_menu.handle_input(
-                        event.pos,
-                        (1, 0, 0)
+                    action = (
+                        options_menu.handle_input(
+                            event.pos,
+                            (1, 0, 0)
+                        )
                     )
 
                     if action == "back":
@@ -1186,41 +728,41 @@ def main():
                             previous_state
                         )
 
-                # -------------------------------------------------
-                # CREDITS
-                # -------------------------------------------------
-
                 elif current_state == CREDITS:
 
-                    action = credits_menu.handle_input(
-                        event.pos,
-                        (1, 0, 0)
+                    action = (
+                        credits_menu.handle_input(
+                            event.pos,
+                            (1, 0, 0)
+                        )
                     )
 
                     if action == "back":
 
                         current_state = MENU
 
-                # -------------------------------------------------
-                # FAILURE
-                # -------------------------------------------------
-
                 elif current_state == FAILURE:
 
-                    action = failure_menu.handle_input(
-                        event.pos,
-                        (1, 0, 0)
+                    action = (
+                        failure_menu.handle_input(
+                            event.pos,
+                            (1, 0, 0)
+                        )
                     )
 
                     if action == "retry":
 
-                        reset_game(
+                        (
+                            level,
+                            interactive_mgr,
+                            platform_mgr,
+                            projectile_mgr,
                             player,
                             ghost,
-                            level.player_pos
+                            char_mgr
+                        ) = load_selected_level(
+                            current_level_file
                         )
-
-                        attack_locked = False
 
                         pygame.mouse.set_visible(
                             False
@@ -1237,43 +779,37 @@ def main():
                     elif action == "menu":
 
                         current_state = MENU
-
-                # -------------------------------------------------
-                # VICTORY
-                # -------------------------------------------------
 
                 elif current_state == VICTORY:
 
-                    action = victory_menu.handle_input(
-                        event.pos,
-                        (1, 0, 0)
+                    action = (
+                        victory_menu.handle_input(
+                            event.pos,
+                            (1, 0, 0)
+                        )
                     )
 
-                    if action == "next":
+                    if action == "level_select":
 
-                        reset_game(
-                            player,
-                            ghost,
-                            level.player_pos
+                        previous_state = MENU
+
+                        current_state = (
+                            LEVEL_SELECT
                         )
-
-                        attack_locked = False
-
-                        pygame.mouse.set_visible(
-                            False
-                        )
-
-                        pygame.event.set_grab(
-                            True
-                        )
-
-                        pygame.mouse.get_rel()
-
-                        current_state = PLAYING
 
                     elif action == "menu":
 
                         current_state = MENU
+
+            # -------------------------------------------------
+            # INTERACTIVE EVENTS
+            # -------------------------------------------------
+
+            if current_state == PLAYING:
+
+                interactive_mgr.handle_event(
+                    event
+                )
 
         # =====================================================
         # UPDATE
@@ -1282,6 +818,10 @@ def main():
         if current_state == MENU:
 
             main_menu.update()
+
+        elif current_state == LEVEL_SELECT:
+
+            level_select_menu.update()
 
         elif current_state == PAUSE:
 
@@ -1309,19 +849,54 @@ def main():
 
         elif current_state == PLAYING:
 
-            # -------------------------------------------------
-            # PRZESZKODY
-            # -------------------------------------------------
+            # =================================================
+            # PLAYER INPUT
+            # =================================================
+
+            keys = pygame.key.get_pressed()
+
+            move_x = 0
+
+            if (
+                keys[pygame.K_a]
+                or keys[pygame.K_LEFT]
+            ):
+
+                move_x -= 1
+
+            if (
+                keys[pygame.K_d]
+                or keys[pygame.K_RIGHT]
+            ):
+
+                move_x += 1
+
+            player.move(
+                move_x
+            )
+
+            # =================================================
+            # OBSTACLES
+            # =================================================
+
+            interactive_objs = (
+                interactive_mgr.objects
+            )
 
             solid_interactive = [
+
                 obj
-                for obj in interactive_mgr.objects
+
+                for obj in interactive_objs
+
                 if (
                     hasattr(
                         obj,
                         "is_open"
                     )
+
                     and not obj.is_open
+
                     and not isinstance(
                         obj,
                         CodePanel
@@ -1334,9 +909,15 @@ def main():
                 + solid_interactive
             )
 
-            # -------------------------------------------------
+            # =================================================
             # GHOST
-            # -------------------------------------------------
+            # =================================================
+
+            # WAŻNE:
+            # last_pos = pozycja z poprzedniej klatki
+            ghost.last_pos = (
+                ghost.pos.copy()
+            )
 
             if (
                 mouse_dx != 0
@@ -1350,70 +931,115 @@ def main():
                     all_obstacles
                 )
 
-            # -------------------------------------------------
-            # POSTACIE
-            # -------------------------------------------------
+            else:
+
+                # Upewnij się, że hitbox
+                # nadal jest zsynchronizowany.
+                ghost.update_rect()
+
+            # =================================================
+            # PLAYER
+            # =================================================
 
             char_mgr.update_all(
                 dt,
                 platforms=all_obstacles
             )
 
-            # -------------------------------------------------
-            # ATAK
-            # -------------------------------------------------
+            # Duch NIE jest aktualizowany przez manager,
+            # ale musimy zaktualizować jego sprite.
+            ghost.update(
+                dt
+            )
 
-            if attack_locked:
-
-                if not player.is_attacking():
-
-                    attack_locked = False
-
-            # -------------------------------------------------
+            # =================================================
             # ENEMIES
-            # -------------------------------------------------
+            # =================================================
 
             for enemy in level.enemies:
 
                 enemy.update(
                     dt,
                     player_pos=player.pos,
-                    platforms=platform_mgr.platforms
+                    platforms=platform_mgr
                 )
 
-                distance = (
-                    enemy.pos
-                    - player.pos
-                ).length()
-
                 if (
-                    distance
-                    < enemy.detection_range
-                    and enemy.shoot_cooldown <= 0
+                    getattr(
+                        enemy,
+                        "shoot_cooldown",
+                        0
+                    ) <= 0
                 ):
 
-                    projectile_mgr.add(
-                        enemy.shoot(
+                    if hasattr(
+                        enemy,
+                        "shoot"
+                    ):
+
+                        projectile = enemy.shoot(
                             player.pos.x,
                             player.pos.y
                         )
-                    )
 
-                    enemy.shoot_cooldown = (
-                        enemy.shoot_interval
-                    )
+                        if projectile:
 
-            # -------------------------------------------------
+                            projectile_mgr.add(
+                                projectile
+                            )
+
+            # =================================================
             # PROJECTILES
-            # -------------------------------------------------
+            # =================================================
 
             projectile_mgr.update(
                 dt
             )
 
-            # -------------------------------------------------
-            # INTERACTIVE
-            # -------------------------------------------------
+            # =================================================
+            # PROJECTILE COLLISION
+            # =================================================
+
+            for projectile in (
+                projectile_mgr.get_projectiles()
+            ):
+
+                if player.rect.colliderect(
+                    projectile.rect
+                ):
+
+                    player.hp -= getattr(
+                        projectile,
+                        "damage",
+                        10
+                    )
+
+                    projectile.is_dead = True
+
+                    print(
+                        "💥 Trafienie! "
+                        f"HP gracza: {player.hp}"
+                    )
+
+            # =================================================
+            # DEATH
+            # =================================================
+
+            if player.hp <= 0:
+
+                pygame.mouse.set_visible(
+                    True
+                )
+
+                pygame.event.set_grab(
+                    False
+                )
+
+                current_state = FAILURE
+
+            # =================================================
+            # INTERACTIVE OBJECTS
+            # =================================================
 
             interactive_mgr.update_all(
                 player,
@@ -1421,31 +1047,42 @@ def main():
                 dt
             )
 
+            # =================================================
+            # LEVEL GATE
+            # =================================================
+
+            for obj in interactive_mgr:
+
+                if getattr(
+                    obj,
+                    "triggered",
+                    False
+                ):
+
+                    pygame.mouse.set_visible(
+                        True
+                    )
+
+                    pygame.event.set_grab(
+                        False
+                    )
+
+                    current_state = VICTORY
+
+                    obj.triggered = False
+
+                    break
+
         # =====================================================
         # DRAW
         # =====================================================
 
-        # -----------------------------------------------------
-        # BACKGROUND
-        # -----------------------------------------------------
-
-        if current_state in (
-            PLAYING,
-            PAUSE
-        ):
-
-            art_manager.draw_background(
-                screen
-            )
-
-        else:
-
-            screen.fill(
-                (30, 30, 30)
-            )
+        screen.fill(
+            (30, 30, 40)
+        )
 
         # =====================================================
-        # GAME / PAUSE
+        # GAME
         # =====================================================
 
         if current_state in (
@@ -1453,71 +1090,70 @@ def main():
             PAUSE
         ):
 
-            # -------------------------------------------------
-            # PLATFORMS
-            # -------------------------------------------------
-
+            # Platformy
             platform_mgr.draw(
                 screen
             )
 
-            # -------------------------------------------------
-            # EXISTING INTERACTIVE DRAW
-            # -------------------------------------------------
-
+            # Interactive
             interactive_mgr.draw_all(
                 screen
             )
 
-            # -------------------------------------------------
-            # CUSTOM ART
-            # -------------------------------------------------
-
-            art_manager.draw_interactive_art(
-                screen,
-                interactive_mgr.objects
-            )
-
-            # -------------------------------------------------
-            # CHARACTERS
-            # -------------------------------------------------
-
+            # Characters
             char_mgr.draw_all(
                 screen
             )
 
-            # -------------------------------------------------
-            # ENEMIES
-            # -------------------------------------------------
-
+            # Enemies
             for enemy in level.enemies:
 
-                enemy.draw(
-                    screen
-                )
+                if (
+                    hasattr(
+                        enemy,
+                        "is_alive"
+                    )
+                    and enemy.is_alive()
+                ):
 
-            # -------------------------------------------------
-            # PROJECTILES
-            # -------------------------------------------------
+                    enemy.draw(
+                        screen
+                    )
 
+                elif not hasattr(
+                    enemy,
+                    "is_alive"
+                ):
+
+                    enemy.draw(
+                        screen
+                    )
+
+            # Projectiles
             projectile_mgr.draw_all(
                 screen
             )
 
-            # -------------------------------------------------
+            # =================================================
             # HUD
-            # -------------------------------------------------
+            # =================================================
 
             font = pygame.font.Font(
                 None,
                 32
             )
 
+            player_power = getattr(
+                player,
+                "power",
+                0
+            )
+
             hud_text = font.render(
                 (
-                    f"Player HP: {player.hp} | "
-                    f"Ghost HP: {ghost.hp} | "
-                    f"Power: {player.power}"
+                    f"Player HP: {player.hp} "
+                    f"| Ghost HP: {ghost.hp} "
+                    f"| Power: {player_power}"
                 ),
                 True,
                 (255, 255, 255)
@@ -1531,8 +1167,7 @@ def main():
             info = font.render(
                 (
                     "A/D = Move, "
-                    "W = Jump, "
-                    "S = Fast Fall, "
+                    "W/Space = Jump, "
                     "2 = Attack, "
                     "ESC = Pause"
                 ),
@@ -1545,10 +1180,6 @@ def main():
                 (10, 50)
             )
 
-            # -------------------------------------------------
-            # PAUSE
-            # -------------------------------------------------
-
             if current_state == PAUSE:
 
                 pause_menu.draw(
@@ -1556,12 +1187,18 @@ def main():
                 )
 
         # =====================================================
-        # MENU
+        # MENUS
         # =====================================================
 
         elif current_state == MENU:
 
             main_menu.draw(
+                screen
+            )
+
+        elif current_state == LEVEL_SELECT:
+
+            level_select_menu.draw(
                 screen
             )
 
