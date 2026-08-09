@@ -21,12 +21,12 @@ platform 900 250 200 20 platform3
 
 # lever x y width height direction name
 
-#lever 300 450 100 20 left main_lever
+lever 300 450 100 20 left main_lever
 
 
 # door x y width height trigger name
 
-#door 700 250 30 120 main_lever main_door
+door 700 250 30 120 main_lever main_door
 
 
 # codepanel x y code name

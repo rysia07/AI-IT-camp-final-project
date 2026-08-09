@@ -1,11 +1,111 @@
 import pygame
+from animations import SpriteObject
+
 
 
 class Interactive:
+
     def __init__(self, x, y, w, h):
         self.rect = pygame.Rect(x, y, w, h)
         self.active = True
-        self.color = (150, 150, 150)  # Szary placeholder
+        self.color = (150, 150, 150)
+
+        # =====================================================
+        # ANIMATION
+        # =====================================================
+
+        self.sprite = None
+        self.current_anim = None
+
+    # =========================================================
+    # ANIMATION
+    # =========================================================
+
+    def add_anim(
+        self,
+        name,
+        frames,
+        cols,
+        rows,
+        speed=100,
+        loop=True,
+        spritesheet_path=None,
+        scale=1.0
+    ):
+        """
+        Adds an animation to the interactive object.
+
+        Example:
+
+            lever.add_anim(
+                "idle",
+                frames=[0, 1, 2],
+                cols=3,
+                rows=1,
+                speed=150,
+                loop=True,
+                spritesheet_path="../pictures/lever.png",
+                scale=2.0
+            )
+        """
+
+        # Create SpriteObject when the first animation is added
+        if self.sprite is None:
+
+            if spritesheet_path is None:
+                raise ValueError(
+                    "spritesheet_path is required for the first animation."
+                )
+
+            self.sprite = SpriteObject(
+                "interactive",
+                spritesheet_path,
+                self.rect.centerx,
+                self.rect.centery
+            )
+
+        self.sprite.add_frames(
+            name=name,
+            indices=frames,
+            cols=cols,
+            rows=rows,
+            frame_duration=speed,
+            loop=loop,
+            spritesheet_path=spritesheet_path,
+            scale=scale
+        )
+
+    def play(self, name, reset=True):
+
+        if self.sprite is None:
+            return False
+
+        if name not in self.sprite.animations:
+            return False
+
+        self.sprite.play(name, reset)
+        self.current_anim = name
+
+        return True
+
+    def update_animation(self, dt):
+
+        if self.sprite is None:
+            return
+
+        # Your SpriteObject expects milliseconds
+        self.sprite.update(
+            int(dt * 1000)
+        )
+
+        self.sprite.set_position(
+            self.rect.centerx,
+            self.rect.centery
+        )
+
+    # =========================================================
+    # GAME LOGIC
+    # =========================================================
 
     def update(self, creature, ghost):
         pass
@@ -13,9 +113,24 @@ class Interactive:
     def handle_event(self, event):
         pass
 
+    # =========================================================
+    # DRAW
+    # =========================================================
+
     def draw(self, surface):
-        # Uniwersalny placeholder - czysta bryła bez ramek
-        pygame.draw.rect(surface, self.color, self.rect)
+
+        if self.sprite and self.sprite.current:
+
+            self.sprite.draw(surface)
+
+        else:
+
+            pygame.draw.rect(
+                surface,
+                self.color,
+                self.rect
+            )
+
 
 
 class Lever(Interactive):
@@ -242,29 +357,50 @@ class LevelGate(Interactive):
         if self.triggered:
             return
 
-        if creature.rect.colliderect(self.rect) and ghost.rect.colliderect(self.rect):
+        if (
+            creature.rect.colliderect(self.rect)
+            and ghost.rect.colliderect(self.rect)
+        ):
             print("NEXT LEVEL")
             self.triggered = True
 
 
+
 class InteractiveManager:
+
     def __init__(self):
         self.objects = []
 
     def add(self, obj: Interactive):
         self.objects.append(obj)
 
-    def update_all(self, creature, ghost):
+    def update_all(self, creature, ghost, dt):
+
         for obj in self.objects:
+
             if obj.active:
-                obj.update(creature, ghost)
+
+                # Game logic
+                obj.update(
+                    creature,
+                    ghost
+                )
+
+                # Animation
+                obj.update_animation(
+                    dt
+                )
 
     def handle_event_all(self, event):
+
         for obj in self.objects:
+
             if obj.active:
                 obj.handle_event(event)
 
     def draw_all(self, surface):
+
         for obj in self.objects:
+
             if obj.active:
                 obj.draw(surface)
