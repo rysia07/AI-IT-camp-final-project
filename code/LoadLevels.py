@@ -1,5 +1,7 @@
 import pygame
 
+from Characters import ShootingEnemy
+
 from Interactive import (
     Lever,
     CodePanel,
@@ -17,6 +19,9 @@ class LevelData:
         # pygame.Rect objects used for collision
         self.platforms = []
 
+        # Enemies
+        self.enemies = []
+
         # Player starting position
         self.player_pos = (450, 300)
 
@@ -25,6 +30,7 @@ class LevelData:
 
         # Named objects
         self.objects = {}
+
 
 
 def load_level(filepath):
@@ -310,6 +316,47 @@ def load_level(filepath):
                             level.objects[name] = gate
 
                     # =================================================
+                    # SHOOTING ENEMY
+                    # =================================================
+
+                    elif object_type in ("enemy", "shootingenemy"):
+
+                        if len(parts) < 3:
+                            print(
+                                f"Line {line_number}: "
+                                f"enemy needs x y [spritesheet] [name]"
+                            )
+                            continue
+
+                        x = float(parts[1])
+                        y = float(parts[2])
+
+                        # Optional spritesheet
+                        spritesheet_path = (
+                            parts[3]
+                            if len(parts) > 3
+                            else None
+                        )
+
+                        # Optional name
+                        name = (
+                            parts[4]
+                            if len(parts) > 4
+                            else None
+                        )
+
+                        enemy = ShootingEnemy(
+                            x,
+                            y,
+                            spritesheet_path=spritesheet_path
+                        )
+
+                        level.enemies.append(enemy)
+
+                        if name:
+                            level.objects[name] = enemy
+
+                    # =================================================
                     # UNKNOWN
                     # =================================================
 
@@ -383,7 +430,8 @@ def load_level(filepath):
 
     print(
         f"Level loaded: "
-        f"{len(level.platforms)} platforms"
+        f"{len(level.platforms)} platforms, "
+        f"{len(level.enemies)} enemies"
     )
 
     print(
