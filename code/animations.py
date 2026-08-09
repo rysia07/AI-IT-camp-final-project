@@ -1,8 +1,7 @@
 import pygame
 from dataclasses import dataclass
 from typing import List, Optional, Dict, Tuple
-
-
+okno =  pygame.display.set_mode((800, 600))  # Przykładowe ustawienie okna
 # =========================================================
 # FRAME
 # =========================================================
@@ -144,18 +143,19 @@ class Animation:
         self.elapsed = 0
         self._finished = False
 
-    def update(self, dt: int) -> Optional[pygame.Surface]:
+    def update(self, dt: float) -> Optional[pygame.Surface]:
 
         if not self.frames:
             return None
 
         if self._finished:
-
             return self.spritesheet.get_frame(
                 self.frames[-1].rect
             )
 
-        self.elapsed += dt
+        # dt z gry jest w sekundach,
+        # animacja używa milisekund
+        self.elapsed += dt * 1000
 
         dur = self.frames[self.current].duration
 
