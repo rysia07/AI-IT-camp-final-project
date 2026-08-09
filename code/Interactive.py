@@ -2,6 +2,7 @@ import random
 from typing import Optional
 import pygame
 from animations import SpriteObject
+
 # =========================================================
 # INTERACTIVE & ENVIRONMENT
 # =========================================================
@@ -63,7 +64,7 @@ class Interactive:
         self.sprite.update(dt)
         self.sprite.set_position(self.rect.centerx, self.rect.centery)
 
-    def update(self, creature, ghost):
+    def update(self, creature, ghost=None, dt=0, *args, **kwargs):
         pass
 
     def handle_event(self, event):
@@ -83,7 +84,10 @@ class Lever(Interactive):
         self.direction = direction
         self.enter_side = None
 
-    def update(self, creature, ghost):
+    def update(self, creature, ghost=None, dt=0, *args, **kwargs):
+        if ghost is None or not hasattr(ghost, 'last_pos') or not hasattr(ghost, 'pos'):
+            return
+
         prev_x, prev_y = ghost.last_pos.x, ghost.last_pos.y
         curr_x, curr_y = ghost.pos.x, ghost.pos.y
 
@@ -142,7 +146,7 @@ class CodePanel(Interactive):
         self.player_near = False
         self.color = (70, 130, 180)
 
-    def update(self, creature, ghost):
+    def update(self, creature, ghost=None, dt=0, *args, **kwargs):
         self.player_near = creature.rect.colliderect(self.rect)
         if not self.player_near and self.is_open:
             self.is_open = False
@@ -197,7 +201,7 @@ class ScoringButton(Interactive):
         self.used = False
         self.color = (241, 196, 15)
 
-    def update(self, creature, ghost):
+    def update(self, creature, ghost=None, dt=0, *args, **kwargs):
         if creature.rect.colliderect(self.rect):
             current_power = getattr(creature, 'power', 0)
             if not self.used and current_power >= self.required_power:
@@ -214,14 +218,15 @@ class ScoringButton(Interactive):
 
             min_overlap = min(overlap_left, overlap_right, overlap_top, overlap_bottom)
 
-            if min_overlap == overlap_top and creature.vel_y >= 0:
+            if min_overlap == overlap_top and getattr(creature, 'vel_y', 0) >= 0:
                 creature.rect.bottom = self.rect.top
                 creature.vel_y = 0
                 creature.pos.y = creature.rect.centery
                 creature.is_grounded = True
-                creature.jumps_left = creature.max_jumps  # RESET DOUBLE JUMP
+                if hasattr(creature, 'max_jumps'):
+                    creature.jumps_left = creature.max_jumps
 
-            elif min_overlap == overlap_bottom and creature.vel_y < 0:
+            elif min_overlap == overlap_bottom and getattr(creature, 'vel_y', 0) < 0:
                 creature.rect.top = self.rect.bottom
                 creature.vel_y = 0
                 creature.pos.y = creature.rect.centery
@@ -242,7 +247,7 @@ class Door(Interactive):
         self.trigger_object = trigger_object
         self.color = (139, 69, 19)
 
-    def update(self, creature, ghost):
+    def update(self, creature, ghost=None, dt=0, *args, **kwargs):
         if self.trigger_object:
             if hasattr(self.trigger_object, 'enabled'):
                 self.is_open = self.trigger_object.enabled
@@ -264,13 +269,14 @@ class Door(Interactive):
             elif min_overlap == overlap_right:
                 creature.rect.left = self.rect.right
                 creature.pos.x = creature.rect.centerx
-            elif min_overlap == overlap_top and creature.vel_y >= 0:
+            elif min_overlap == overlap_top and getattr(creature, 'vel_y', 0) >= 0:
                 creature.rect.bottom = self.rect.top
                 creature.vel_y = 0
                 creature.pos.y = creature.rect.centery
                 creature.is_grounded = True
-                creature.jumps_left = creature.max_jumps  # RESET DOUBLE JUMP
-            elif min_overlap == overlap_bottom and creature.vel_y < 0:
+                if hasattr(creature, 'max_jumps'):
+                    creature.jumps_left = creature.max_jumps
+            elif min_overlap == overlap_bottom and getattr(creature, 'vel_y', 0) < 0:
                 creature.rect.top = self.rect.bottom
                 creature.vel_y = 0
                 creature.pos.y = creature.rect.centery
@@ -286,32 +292,30 @@ class LevelGate(Interactive):
         self.triggered = False
         self.color = (142, 68, 173)
 
-    def update(self, creature, ghost):
+    def update(self, creature, ghost=None, dt=0, *args, **kwargs):
         if self.triggered:
             return
 
-        if creature.rect.colliderect(self.rect) and ghost.rect.colliderect(self.rect):
-            print("NEXT LEVEL")
-            self.triggered = True
+        ghost_rect = getattr(ghost, 'rect', None)
+        creature_rect = getattr(creature, 'rect', None)
+
+        if creature_rect and ghost_rect:
+            if creature_rect.colliderect(self.rect) and ghost_rect.colliderect(self.rect):
+                print("NEXT LEVEL")
+                self.triggered = True
 
 
 class SafeZone(Interactive):
-    """
-    Strefa (np. schron, pole siłowe), w której postać oraz duszka chroni status bezpieczny.
-    Możesz w łatwy sposób sprawdzać, czy postać jest w SafeZone i blokować obrażenia.
-    """
-
     def __init__(self, x, y, w=150, h=150):
         super().__init__(x, y, w, h)
-        self.color = (46, 204, 113, 100)  # Półprzezroczysty zielony
+        self.color = (46, 204, 113, 100)
         self.is_ghost_inside = False
         self.is_creature_inside = False
 
-    def update(self, creature, ghost):
+    def update(self, creature, ghost=None, dt=0, *args, **kwargs):
         self.is_creature_inside = self.rect.colliderect(creature.rect)
 
     def draw(self, surface):
-        # Rysowanie półprzezroczystego obszaru
         s = pygame.Surface((self.rect.width, self.rect.height), pygame.SRCALPHA)
         s.fill((46, 204, 113, 80))
         surface.blit(s, (self.rect.x, self.rect.y))
@@ -321,27 +325,65 @@ class SafeZone(Interactive):
 # =========================================================
 # INTERACTIVE MANAGER
 # =========================================================
-
 class InteractiveManager:
-
     def __init__(self):
         self.objects = []
 
-    def add(self, obj: Interactive):
-        self.objects.append(obj)
+    def add(self, obj):
+        if obj not in self.objects:
+            self.objects.append(obj)
 
-    def update_all(self, creature, ghost, dt):
-        for obj in self.objects:
-            if obj.active:
-                obj.update(creature, ghost)
-                obj.update_animation(dt)
+    def remove(self, obj):
+        if obj in self.objects:
+            self.objects.remove(obj)
 
-    def handle_event_all(self, event):
+    def clear(self):
+        self.objects.clear()
+
+    # =========================================================
+    # METODY MAGICZNE (Dunder Methods)
+    # =========================================================
+
+    def __len__(self):
+        return len(self.objects)
+
+    def __iter__(self):
+        return iter(self.objects)
+
+    def __getitem__(self, index):
+        return self.objects[index]
+
+    def __contains__(self, obj):
+        return obj in self.objects
+
+    def __repr__(self):
+        return f"<InteractiveManager ({len(self.objects)} objects)>"
+
+    # =========================================================
+    # METODY GRY (Pętla Pygame)
+    # =========================================================
+
+    def update(self, player, *args, **kwargs):
         for obj in self.objects:
-            if obj.active:
+            if hasattr(obj, "update"):
+                obj.update(player, *args, **kwargs)
+
+    # Aliasy zapewniające pełną kompatybilność z różnymi nazwami w main.py
+    def update_all(self, player, *args, **kwargs):
+        self.update(player, *args, **kwargs)
+
+    def handle_event(self, event):
+        for obj in self.objects:
+            if hasattr(obj, "handle_event"):
                 obj.handle_event(event)
 
-    def draw_all(self, surface):
+    def handle_event_all(self, event):
+        self.handle_event(event)
+
+    def draw(self, surface):
         for obj in self.objects:
-            if obj.active:
+            if hasattr(obj, "draw"):
                 obj.draw(surface)
+
+    def draw_all(self, surface):
+        self.draw(surface)
