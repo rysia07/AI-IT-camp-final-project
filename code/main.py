@@ -135,6 +135,14 @@ def main():
     pygame.init()
 
     audio = AudioAdapter()
+    jump_audio = AudioAdapter()
+    shoot_audio = AudioAdapter()
+
+    audio.load("../głosy do gry/shoot.wav")
+    jump_audio.load("../głosy do gry/jump.wav")
+    shoot_audio.load("../głosy do gry/shoot.wav")
+    audio.set_volume(0.5)
+    audio.play(loops=-1)
 
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
     pygame.display.set_caption("Alien Space")
@@ -166,6 +174,11 @@ def main():
     # =========================================================
     while running:
         dt = clock.tick(FPS) / 1000.0
+
+        audio.update()
+        jump_audio.update()
+        shoot_audio.update()
+
         mouse_dx, mouse_dy = 0, 0
 
         # ----------------------------------------------------
@@ -198,8 +211,10 @@ def main():
                     if event.key in (pygame.K_w, pygame.K_UP, pygame.K_SPACE):
                         if hasattr(player, 'jump'):
                             player.jump()
+                            jump_audio.play()
                     if event.key == pygame.K_2 and hasattr(player, 'play'):
                         player.play("attack")
+                        shoot_audio.play()
 
             elif event.type == pygame.MOUSEMOTION:
                 if current_state == PLAYING:
