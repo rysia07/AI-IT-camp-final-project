@@ -13,7 +13,6 @@ from Interactive import (
 from Characters import Creature, GhostMouse, CharacterManager
 from GUI import MainMenu, OptionsMenu, CreditsMenu, FailureMenu, VictoryMenu
 from Platforms import PlatformManager
-
 # =========================================================
 # INITIALIZATION
 # =========================================================
