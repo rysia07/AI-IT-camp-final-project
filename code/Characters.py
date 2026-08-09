@@ -68,10 +68,10 @@ class Character:
                 raise ValueError("Brak spritesheet_path")
 
         self.sprite.add_frames(
-            name,
-            frames,
-            cols,
-            rows,
+            name=name,
+            indices=frames,
+            cols=cols,
+            rows=rows,
             frame_duration=speed,
             loop=loop,
             spritesheet_path=spritesheet_path,
@@ -128,7 +128,7 @@ class Character:
 # =========================================================
 # CREATURE
 # =========================================================
-
+python
 class Creature(Character):
 
     def __init__(self, x, y, spritesheet_path=None):
@@ -139,7 +139,9 @@ class Creature(Character):
             spritesheet_path=spritesheet_path
         )
 
+        self.vel_x = 0
         self.vel_y = 0
+
         self.hp = 100
         self.power = 0
         self.score = 0
@@ -153,6 +155,9 @@ class Creature(Character):
         self.is_grounded = False
         self.jump_speed = 400
 
+        # FIZYKA
+        self.gravity = 1200
+
         # ANIMACJE
         self.walk_anim = "walk"
         self.idle_anim = "idle"
@@ -163,62 +168,118 @@ class Creature(Character):
             self.jumps_left -= 1
             self.is_grounded = False
 
-    def update(self, dt, platforms=None, *args, **kwargs):
-        keys = pygame.key.get_pressed()
+    def move(self, direction):
+        """
+        direction:
+            -1 = lewo
+             0 = brak ruchu
+             1 = prawo
+        """
+        self.vel_x = direction * self.speed
 
-        # POZIOMO
-        dx = 0
-        if keys[pygame.K_a]:
-            dx -= self.speed * dt
-        if keys[pygame.K_d]:
-            dx += self.speed * dt
+    def update(self, dt, platforms=None, *args, **kwargs):
+
+        # =====================================================
+        # RUCH POZIOMY
+        # =====================================================
+
+        dx = self.vel_x * dt
 
         self.pos.x += dx
         self.update_rect()
 
-        # KOLIZJE POZIOME
+        # Kolizje poziome
         if platforms:
             for platform in platforms:
-                plat_rect = platform.rect if hasattr(platform, "rect") else platform
+
+                plat_rect = (
+                    platform.rect
+                    if hasattr(platform, "rect")
+                    else platform
+                )
+
                 if self.rect.colliderect(plat_rect):
+
                     if dx > 0:
                         self.rect.right = plat_rect.left
+
                     elif dx < 0:
                         self.rect.left = plat_rect.right
+
                     self.pos.x = self.rect.centerx
 
+        # =====================================================
         # ANIMACJA
-        if dx != 0:
+        # =====================================================
+
+        if abs(self.vel_x) > self.movement_threshold:
+
             if self.walk_anim:
                 self.play(self.walk_anim, reset=False)
+
         else:
+
             if self.idle_anim:
                 self.play(self.idle_anim, reset=False)
 
+        # =====================================================
         # GRAWITACJA
-        gravity = 1200
-        self.vel_y += gravity * dt
+        # =====================================================
+
+        was_grounded = self.is_grounded
+
+        self.vel_y += self.gravity * dt
+
         self.pos.y += self.vel_y * dt
         self.update_rect()
 
-        # KOLIZJE PIONOWE
+        # Domyślnie nie jesteśmy na ziemi.
         self.is_grounded = False
 
+        # =====================================================
+        # KOLIZJE PIONOWE
+        # =====================================================
+
         if platforms:
+
             for platform in platforms:
-                plat_rect = platform.rect if hasattr(platform, "rect") else platform
-                if self.rect.colliderect(plat_rect):
-                    if self.vel_y > 0:
-                        self.rect.bottom = plat_rect.top
-                        self.pos.y = self.rect.centery
-                        self.vel_y = 0
-                        self.is_grounded = True
-                        self.jumps_left = self.max_jumps  # Reset skoków na platformie
-                    elif self.vel_y < 0:
-                        self.rect.top = plat_rect.bottom
-                        self.pos.y = self.rect.centery
-                        self.vel_y = 0
-                    break
+
+                plat_rect = (
+                    platform.rect
+                    if hasattr(platform, "rect")
+                    else platform
+                )
+
+                if not self.rect.colliderect(plat_rect):
+                    continue
+
+                # Spadanie / stanie na platformie
+                if self.vel_y >= 0:
+
+                    self.rect.bottom = plat_rect.top
+
+                    self.pos.y = self.rect.centery
+
+                    self.vel_y = 0
+
+                    self.is_grounded = True
+
+                    self.jumps_left = self.max_jumps
+
+                # Uderzenie głową
+                elif self.vel_y < 0:
+
+                    self.rect.top = plat_rect.bottom
+
+                    self.pos.y = self.rect.centery
+
+                    self.vel_y = 0
+
+                break
+
+        # =====================================================
+        # ANIMACJA / SPRITE
+        # =====================================================
 
         super().update(dt)
 
@@ -226,51 +287,30 @@ class Creature(Character):
 # =========================================================
 # GHOST
 # =========================================================
+
 class GhostMouse(Character):
 
     def __init__(self, x=0, y=0, spritesheet_path=None):
-        super().__init__(x, y, 30, spritesheet_path=spritesheet_path)
+
+        super().__init__(
+            x,
+            y,
+            30,
+            spritesheet_path=spritesheet_path
+        )
+
         self.hp = 50
 
     def update(self, dt, platforms=None, *args, **kwargs):
-        self.last_pos = self.pos.copy()
-        mouse_pos = pygame.Vector2(pygame.mouse.get_pos())
 
-        # ----------------------------------------------------
-        # 1. RUCH I KOLIZJA POZIOMA (X)
-        # ----------------------------------------------------
-        dx = mouse_pos.x - self.pos.x
-        self.pos.x += dx
+        # Tylko synchronizacja hitboxa i animacji.
+        # last_pos jest zapisywane przed ruchem w main.py.
+
         self.update_rect()
-
-        if platforms:
-            for platform in platforms:
-                plat_rect = platform.rect if hasattr(platform, "rect") else platform
-                if self.rect.colliderect(plat_rect):
-                    if dx > 0:  # Ruch w prawo
-                        self.rect.right = plat_rect.left
-                    elif dx < 0:  # Ruch w lewo
-                        self.rect.left = plat_rect.right
-                    self.pos.x = self.rect.centerx
-
-        # ----------------------------------------------------
-        # 2. RUCH I KOLIZJA PIONOWA (Y)
-        # ----------------------------------------------------
-        dy = mouse_pos.y - self.pos.y
-        self.pos.y += dy
-        self.update_rect()
-
-        if platforms:
-            for platform in platforms:
-                plat_rect = platform.rect if hasattr(platform, "rect") else platform
-                if self.rect.colliderect(plat_rect):
-                    if dy > 0:  # Ruch w dół
-                        self.rect.bottom = plat_rect.top
-                    elif dy < 0:  # Ruch w górę
-                        self.rect.top = plat_rect.bottom
-                    self.pos.y = self.rect.centery
 
         super().update(dt)
+
+
 
 
 # =========================================================
@@ -416,9 +456,17 @@ class CharacterManager:
             else:
                 character.update(dt)
 
+    def update(self, dt, platforms=None, player_pos=None):
+        """Alias dla update_all."""
+        self.update_all(dt, platforms=platforms, player_pos=player_pos)
+
     def draw_all(self, surface):
         for character in self.characters.values():
             character.draw(surface)
+
+    def draw(self, surface):
+        """Alias dla draw_all."""
+        self.draw_all(surface)
 
 
 # =========================================================
@@ -473,6 +521,10 @@ class ProjectileManager:
     def draw_all(self, surface):
         for projectile in self.projectiles:
             projectile.draw(surface)
+
+    def draw(self, surface):
+        """Alias dla draw_all."""
+        self.draw_all(surface)
 
     def get_projectiles(self):
         return self.projectiles.copy()
