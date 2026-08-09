@@ -5,7 +5,7 @@
 p 44 510
 
 platform 720 127 150 30 new_platform
-scoringbutton 3 248 0 new_button
+scoringbutton 42 277 0 new_button
 levelgate 808 46 new_gate
 platform 0 569 900 30 new_platform1
 platform 227 504 150 30 new_platform2

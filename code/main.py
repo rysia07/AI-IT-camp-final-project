@@ -28,10 +28,16 @@ from GUI import (
 
 from pause_menu import PauseMenu
 
+from audio_adapter import AudioAdapter
 
 # =========================================================
 # KONFIGURACJA
 # =========================================================
+
+audio = AudioAdapter()
+audio.load("../audio/background_ost.wav")
+audio.set_volume(0.4)
+audio.play(loops=-1)
 
 FPS = 60
 
@@ -349,11 +355,9 @@ def load_selected_level(
         char_mgr
     )
 
-
 # =========================================================
 # MAIN
 # =========================================================
-
 def main():
 
     pygame.init()
@@ -367,6 +371,16 @@ def main():
     )
 
     clock = pygame.time.Clock()
+
+    # =================================================
+    # AUDIO
+    # =================================================
+
+    audio = AudioAdapter()
+
+    audio.load("../audio/background_ost.wav")
+    audio.set_volume(0.4)
+    audio.play(loops=-1)
 
     # =====================================================
     # LEVEL
@@ -450,6 +464,38 @@ def main():
     # =====================================================
     # GAME LOOP
     # =====================================================
+
+    jump_audio = AudioAdapter()
+
+    jump_audio.load(
+    "../audio/jump.wav"
+
+)
+
+    jump_audio.set_volume(0.7)
+
+    attack_audio = AudioAdapter()
+
+    attack_audio.load(
+        "../audio/shoot.wav"
+        )
+
+    attack_audio.set_volume(0.7)
+
+    credits_audio = AudioAdapter()
+
+    credits_audio.load(
+        "../audio/Monster-thing (Bounce).wav"
+    )
+    credits_audio.set_volume(0.7)
+
+    enemy_audio = AudioAdapter()
+
+    enemy_audio.load(
+        "../audio/phokin credits enter sfx.mp3"
+    )
+
+    enemy_audio.set_volume(0.4)
 
     while running:
 
@@ -535,11 +581,11 @@ def main():
                     # Jump
                     if event.key in (
                         pygame.K_w,
-                        pygame.K_UP,
-                        pygame.K_SPACE
                     ):
-
                         player.jump()
+
+                        jump_audio.stop()
+                        jump_audio.play()
 
                     # Attack
                     if (
@@ -550,9 +596,10 @@ def main():
                         )
                     ):
 
-                        player.play(
-                            "attack"
-                        )
+                        attack_audio.stop()
+                        attack_audio.play()
+
+                        player.play("attack")
 
             # -------------------------------------------------
             # MOUSE MOTION
@@ -1309,11 +1356,10 @@ def main():
 
         pygame.display.flip()
 
+    audio.quit()
+
     pygame.quit()
-
     sys.exit()
-
-
 # =========================================================
 # START
 # =========================================================
