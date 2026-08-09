@@ -78,6 +78,7 @@ class BaseMenu:
         self.height = height
         self.title_text = title_text
         self.title_font = pygame.font.Font(None, 64)
+        self.credits_font = pygame.font.Font(None, 16)
         self.btn_font = pygame.font.Font(None, 36)
         self.info_font = pygame.font.Font(None, 28)
         self.buttons = []
@@ -173,19 +174,44 @@ class OptionsMenu(BaseMenu):
 
 class CreditsMenu(BaseMenu):
     def __init__(self, width, height):
-        super().__init__(width, height, "AUTORZY")
+        super().__init__(width, height, "AKTORZÓY")
         btn_w, btn_h = 200, 50
         center_x = width // 2 - btn_w // 2
 
         self.credits_lines = [
-            "Gra stworzona w ramach AI & IT Camp",
-            "",
-            "Programowanie i Projekt:",
-            "• Twój Zespół / Autorzy",
-            "",
-            "Grafika i Animacje: Pygame / Zasoby własne",
-            "Dziękujemy za grę!"
-        ]
+            '''
+            Gra stworzona przez 'AIAIAI STUDIOS'
+            
+            Jakub :
+                wczytywanie animacji, ładowanie leveli,
+                edytor leveli
+                
+            Rafał : 
+                Główna pętla gry,
+                mechanika postaci
+                
+            Mati : 
+                level design,
+                menu opcji,
+            
+            Ala : 
+                grafika gry,
+                level design,
+                wsparcie psychiczne,
+                motywator
+                
+            Steve J*bs :
+                audio design,
+                trailer
+                
+        ''']
+                
+            
+            
+            
+            
+            
+            
 
         self.buttons = [
             Button(center_x, 480, btn_w, btn_h, "Powrót", "back")

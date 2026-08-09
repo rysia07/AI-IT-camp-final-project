@@ -141,8 +141,8 @@ def load_level(filepath):
 
                         x = float(parts[1])
                         y = float(parts[2])
-                        width = float(parts[3])
-                        height = float(parts[4])
+                        width = 23
+                        height = 21
 
                         direction = parts[5]
 

@@ -1,6 +1,5 @@
 import pygame
 from dataclasses import dataclass
-from typing import List, Optional, Dict, Tuple
 
 
 # =========================================================
@@ -9,8 +8,9 @@ from typing import List, Optional, Dict, Tuple
 
 @dataclass
 class Frame:
+
     rect: pygame.Rect
-    duration: int  # ms
+    duration: int  # milliseconds
 
 
 # =========================================================
@@ -19,7 +19,7 @@ class Frame:
 
 class Spritesheet:
 
-    def __init__(self, filepath: str):
+    def __init__(self, filepath):
 
         self.filepath = filepath
 
@@ -29,63 +29,106 @@ class Spritesheet:
 
         self.rect = self.image.get_rect()
 
-    def get_frame(self, rect: pygame.Rect) -> pygame.Surface:
+    # =====================================================
+    # GET FRAME
+    # =====================================================
 
-        surf = pygame.Surface(
-            (rect.width, rect.height),
+    def get_frame(self, rect):
+
+        surface = pygame.Surface(
+            (
+                rect.width,
+                rect.height
+            ),
             pygame.SRCALPHA
         )
 
-        surf.blit(
+        surface.blit(
             self.image,
             (0, 0),
             rect
         )
 
-        return surf
+        return surface
+
+    # =====================================================
+    # CREATE GRID
+    # =====================================================
 
     def create_grid_frames(
         self,
-        cols: int,
-        rows: int,
-        total_frames: Optional[int] = None,
-        duration: int = 100,
-        start_x: int = 0,
-        start_y: int = 0,
-        x_spacing: int = 0,
-        y_spacing: int = 0
-    ) -> List[Frame]:
+        cols,
+        rows,
+        total_frames=None,
+        duration=100,
+        start_x=0,
+        start_y=0,
+        x_spacing=0,
+        y_spacing=0
+    ):
 
-        frames: List[Frame] = []
+        frames = []
 
         if cols <= 0 or rows <= 0:
             return frames
 
-        usable_w = self.rect.width - start_x
-        usable_h = self.rect.height - start_y
-
-        frame_w = usable_w // cols
-        frame_h = usable_h // rows
-
-        max_frames = cols * rows
-
-        take = (
-            max_frames
-            if total_frames is None
-            else min(total_frames, max_frames)
+        usable_w = (
+            self.rect.width
+            - start_x
         )
+
+        usable_h = (
+            self.rect.height
+            - start_y
+        )
+
+        frame_w = (
+            usable_w // cols
+        )
+
+        frame_h = (
+            usable_h // rows
+        )
+
+        max_frames = (
+            cols * rows
+        )
+
+        if total_frames is None:
+
+            take = max_frames
+
+        else:
+
+            take = min(
+                total_frames,
+                max_frames
+            )
 
         count = 0
 
-        for r in range(rows):
+        for row in range(rows):
 
-            for c in range(cols):
+            for col in range(cols):
 
                 if count >= take:
                     break
 
-                x = start_x + c * (frame_w + x_spacing)
-                y = start_y + r * (frame_h + y_spacing)
+                x = (
+                    start_x
+                    + col * (
+                        frame_w
+                        + x_spacing
+                    )
+                )
+
+                y = (
+                    start_y
+                    + row * (
+                        frame_h
+                        + y_spacing
+                    )
+                )
 
                 frames.append(
                     Frame(
@@ -115,12 +158,12 @@ class Animation:
 
     def __init__(
         self,
-        spritesheet: Spritesheet,
-        frames: List[Frame],
-        loop: bool = True,
-        scale: float = 1.0,
-        x_offset: float = 0,
-        y_offset: float = 0
+        spritesheet,
+        frames,
+        loop=True,
+        scale=1.0,
+        x_offset=0,
+        y_offset=0
     ):
 
         self.spritesheet = spritesheet
@@ -129,25 +172,29 @@ class Animation:
         self.loop = loop
         self.scale = scale
 
-        # ==========================================
-        # SPRITE OFFSET
-        # ==========================================
-
         self.x_offset = x_offset
         self.y_offset = y_offset
 
-        # ==========================================
-        # ANIMATION STATE
-        # ==========================================
-
         self.current = 0
-        self.elapsed = 0
+        self.elapsed = 0.0
+
         self._finished = False
 
-    def update(self, dt: int) -> Optional[pygame.Surface]:
+    # =====================================================
+    # UPDATE
+    # =====================================================
+
+    def update(self, dt):
 
         if not self.frames:
             return None
+
+        # -------------------------------------------------
+        # ANIMACJA JUŻ SKOŃCZONA
+        #
+        # NIE WRACAMY DO POCZĄTKU.
+        # ZOSTAJEMY NA OSTATNIEJ KLATCE.
+        # -------------------------------------------------
 
         if self._finished:
 
@@ -155,80 +202,100 @@ class Animation:
                 self.frames[-1].rect
             )
 
-        self.elapsed += dt
+        # dt = sekundy
+        #
+        # duration = milisekundy
 
-        dur = self.frames[self.current].duration
+        self.elapsed += (
+            dt * 1000.0
+        )
 
-        if self.elapsed >= dur:
+        # -------------------------------------------------
+        # PRZECHODZENIE PRZEZ KLATKI
+        # -------------------------------------------------
 
-            self.elapsed -= dur
+        while (
+            self.elapsed
+            >= self.frames[
+                self.current
+            ].duration
+        ):
+
+            self.elapsed -= (
+                self.frames[
+                    self.current
+                ].duration
+            )
+
             self.current += 1
 
-            if self.current >= len(self.frames):
+            # -------------------------------------------------
+            # KONIEC
+            # -------------------------------------------------
+
+            if (
+                self.current
+                >= len(self.frames)
+            ):
+
+                # -------------------------------------------------
+                # LOOP
+                # -------------------------------------------------
 
                 if self.loop:
 
                     self.current = 0
 
+                # -------------------------------------------------
+                # NON-LOOP
+                # -------------------------------------------------
+
                 else:
 
-                    self.current = len(self.frames) - 1
+                    self.current = (
+                        len(self.frames) - 1
+                    )
+
                     self._finished = True
 
+                    break
+
         return self.spritesheet.get_frame(
-            self.frames[self.current].rect
+            self.frames[
+                self.current
+            ].rect
         )
+
+    # =====================================================
+    # RESET
+    # =====================================================
 
     def reset(self):
 
         self.current = 0
-        self.elapsed = 0
+        self.elapsed = 0.0
         self._finished = False
 
-    def is_finished(self) -> bool:
+    # =====================================================
+    # FINISHED
+    # =====================================================
+
+    def is_finished(self):
 
         return self._finished
 
-    def add_frame(
-        self,
-        rect: pygame.Rect,
-        duration: int = 100
-    ):
+    # =====================================================
+    # CURRENT FRAME
+    # =====================================================
 
-        self.frames.append(
-            Frame(
-                rect,
-                duration
-            )
-        )
+    def get_current_frame(self):
 
-    def insert_frame(
-        self,
-        idx: int,
-        rect: pygame.Rect,
-        duration: int = 100
-    ):
+        if not self.frames:
+            return None
 
-        self.frames.insert(
-            idx,
-            Frame(
-                rect,
-                duration
-            )
-        )
-
-    def remove_frame(self, idx: int):
-
-        if 0 <= idx < len(self.frames):
-
-            self.frames.pop(idx)
-
-            if self.current >= len(self.frames):
-
-                self.current = max(
-                    0,
-                    len(self.frames) - 1
-                )
+        return self.frames[
+            self.current
+        ]
 
 
 # =========================================================
@@ -239,10 +306,10 @@ class SpriteObject:
 
     def __init__(
         self,
-        name: str,
-        spritesheet_path: str,
-        x: int = 0,
-        y: int = 0
+        name,
+        spritesheet_path,
+        x=0,
+        y=0
     ):
 
         self.name = name
@@ -251,11 +318,11 @@ class SpriteObject:
             spritesheet_path
         )
 
-        self.animations: Dict[str, Animation] = {}
+        self.animations = {}
 
-        self.current: Optional[str] = None
+        self.current = None
 
-        self.position: Tuple[int, int] = (
+        self.position = (
             x,
             y
         )
@@ -266,70 +333,73 @@ class SpriteObject:
 
     def add_animation(
         self,
-        name: str,
-        cols: int,
-        rows: int,
-        frame_indices: List[int],
-        frame_duration: int = 100,
-        loop: bool = True,
-        start_x: int = 0,
-        start_y: int = 0,
-        x_spacing: int = 0,
-        y_spacing: int = 0,
-        total_frames: Optional[int] = None,
-        spritesheet_path: Optional[str] = None,
-        scale: float = 1.0,
-        x_offset: float = 0,
-        y_offset: float = 0
+        name,
+        cols,
+        rows,
+        frame_indices,
+        frame_duration=100,
+        loop=True,
+        start_x=0,
+        start_y=0,
+        x_spacing=0,
+        y_spacing=0,
+        total_frames=None,
+        spritesheet_path=None,
+        scale=1.0,
+        x_offset=0,
+        y_offset=0
     ):
 
         if not frame_indices:
 
             raise ValueError(
-                "frame_indices is required "
-                "and must be a non-empty list."
+                "frame_indices must not be empty"
             )
-
-        # ==========================================
-        # SPRITESHEET
-        # ==========================================
 
         if spritesheet_path:
 
-            animation_spritesheet = Spritesheet(
-                spritesheet_path
+            animation_spritesheet = (
+                Spritesheet(
+                    spritesheet_path
+                )
             )
 
         else:
 
-            animation_spritesheet = self.spritesheet
+            animation_spritesheet = (
+                self.spritesheet
+            )
 
-        # ==========================================
-        # CREATE FRAME GRID
-        # ==========================================
-
-        full_frames = animation_spritesheet.create_grid_frames(
-            cols=cols,
-            rows=rows,
-            total_frames=total_frames,
-            duration=frame_duration,
-            start_x=start_x,
-            start_y=start_y,
-            x_spacing=x_spacing,
-            y_spacing=y_spacing
+        full_frames = (
+            animation_spritesheet
+            .create_grid_frames(
+                cols=cols,
+                rows=rows,
+                total_frames=total_frames,
+                duration=frame_duration,
+                start_x=start_x,
+                start_y=start_y,
+                x_spacing=x_spacing,
+                y_spacing=y_spacing
+            )
         )
 
-        filtered: List[Frame] = []
+        filtered = []
 
-        for i in frame_indices:
+        for index in frame_indices:
 
-            if 0 <= i < len(full_frames):
+            if (
+                0 <= index
+                < len(full_frames)
+            ):
 
-                f = full_frames[i]
+                frame = full_frames[
+                    index
+                ]
 
                 filtered.append(
                     Frame(
-                        f.rect,
+                        frame.rect.copy(),
                         frame_duration
                     )
                 )
@@ -337,13 +407,10 @@ class SpriteObject:
             else:
 
                 raise IndexError(
-                    f"Frame index {i} out of range "
-                    f"(0..{len(full_frames) - 1})."
+                    f"Frame index {index} "
+                    f"out of range "
+                    f"(0..{len(full_frames)-1})"
                 )
-
-        # ==========================================
-        # CREATE ANIMATION
-        # ==========================================
 
         self.animations[name] = Animation(
             spritesheet=animation_spritesheet,
@@ -360,21 +427,21 @@ class SpriteObject:
 
     def add_frames(
         self,
-        name: str,
-        indices: List[int],
-        cols: int,
-        rows: int,
-        frame_duration: int = 100,
-        loop: bool = True,
-        start_x: int = 0,
-        start_y: int = 0,
-        x_spacing: int = 0,
-        y_spacing: int = 0,
-        total_frames: Optional[int] = None,
-        spritesheet_path: Optional[str] = None,
-        scale: float = 1.0,
-        x_offset: float = 0,
-        y_offset: float = 0
+        name,
+        indices,
+        cols,
+        rows,
+        frame_duration=100,
+        loop=True,
+        start_x=0,
+        start_y=0,
+        x_spacing=0,
+        y_spacing=0,
+        total_frames=None,
+        spritesheet_path=None,
+        scale=1.0,
+        x_offset=0,
+        y_offset=0
     ):
 
         self.add_animation(
@@ -396,53 +463,56 @@ class SpriteObject:
         )
 
     # =====================================================
-    # ADD SINGLE FRAME
-    # =====================================================
-
-    def add_frame_to_animation(
-        self,
-        anim_name: str,
-        rect: pygame.Rect,
-        duration: int = 100
-    ):
-
-        if anim_name in self.animations:
-
-            self.animations[anim_name].add_frame(
-                rect,
-                duration
-            )
-
-    # =====================================================
     # PLAY
     # =====================================================
 
     def play(
         self,
-        name: str,
-        reset: bool = True
+        name,
+        reset=True
     ):
 
-        if name in self.animations:
+        if name not in self.animations:
+            return False
+
+        # -------------------------------------------------
+        # ZMIANA ANIMACJI
+        # -------------------------------------------------
+
+        if self.current != name:
 
             self.current = name
 
-            if reset:
+            self.animations[
+                name
+            ].reset()
 
-                self.animations[name].reset()
+            return True
+
+        # -------------------------------------------------
+        # TA SAMA ANIMACJA
+        #
+        # reset=False = NIE RESTARTUJ
+        # -------------------------------------------------
+
+        if reset:
+
+            self.animations[
+                name
+            ].reset()
+
+        return True
 
     # =====================================================
     # UPDATE
     # =====================================================
 
-    def update(
-        self,
-        dt: int
-    ) -> Optional[pygame.Surface]:
+    def update(self, dt):
 
         if (
             self.current
-            and self.current in self.animations
+            and self.current
+            in self.animations
         ):
 
             return self.animations[
@@ -460,64 +530,80 @@ class SpriteObject:
         if not self.current:
             return
 
-        if self.current not in self.animations:
+        if (
+            self.current
+            not in self.animations
+        ):
             return
 
-        anim = self.animations[
+        animation = self.animations[
             self.current
         ]
 
-        if not anim.frames:
+        if not animation.frames:
             return
 
-        # ==========================================
-        # GET FRAME
-        # ==========================================
+        frame = animation.frames[
+            animation.current
+        ]
 
-        img = anim.spritesheet.get_frame(
-            anim.frames[anim.current].rect
+        image = (
+            animation.spritesheet
+            .get_frame(
+                frame.rect
+            )
         )
 
-        # ==========================================
+        # -------------------------------------------------
         # SCALE
-        # ==========================================
+        # -------------------------------------------------
 
-        scale_factor = anim.scale
+        if animation.scale != 1.0:
 
-        new_width = int(
-            img.get_width() * scale_factor
-        )
-
-        new_height = int(
-            img.get_height() * scale_factor
-        )
-
-        img = pygame.transform.scale(
-            img,
-            (
-                new_width,
-                new_height
+            width = max(
+                1,
+                int(
+                    image.get_width()
+                    * animation.scale
+                )
             )
-        )
 
-        # ==========================================
-        # POSITION + OFFSET
-        # ==========================================
+            height = max(
+                1,
+                int(
+                    image.get_height()
+                    * animation.scale
+                )
+            )
 
-        img_rect = img.get_rect(
+            image = pygame.transform.scale(
+                image,
+                (
+                    width,
+                    height
+                )
+            )
+
+        # -------------------------------------------------
+        # POSITION
+        # -------------------------------------------------
+
+        image_rect = image.get_rect(
             center=(
-                self.position[0] + anim.x_offset,
-                self.position[1] + anim.y_offset
+                int(
+                    self.position[0]
+                    + animation.x_offset
+                ),
+                int(
+                    self.position[1]
+                    + animation.y_offset
+                )
             )
         )
-
-        # ==========================================
-        # DRAW
-        # ==========================================
 
         surface.blit(
-            img,
-            img_rect
+            image,
+            image_rect
         )
 
     # =====================================================
@@ -526,8 +612,8 @@ class SpriteObject:
 
     def set_position(
         self,
-        x: int,
-        y: int
+        x,
+        y
     ):
 
         self.position = (
@@ -537,8 +623,8 @@ class SpriteObject:
 
     def move(
         self,
-        dx: int,
-        dy: int
+        dx,
+        dy
     ):
 
         self.position = (
@@ -550,90 +636,16 @@ class SpriteObject:
     # FINISHED
     # =====================================================
 
-    def is_finished(self) -> bool:
+    def is_finished(self):
 
         if (
             self.current
-            and self.current in self.animations
+            and self.current
+            in self.animations
         ):
 
             return self.animations[
                 self.current
-            ].is_finished()
-
-        return False
-
-
-# =========================================================
-# OBJECT MANAGER
-# =========================================================
-
-class ObjectManager:
-
-    def __init__(self):
-
-        self.objects: Dict[
-            str,
-            SpriteObject
-        ] = {}
-
-    def add(
-        self,
-        obj: SpriteObject
-    ):
-
-        self.objects[obj.name] = obj
-
-    def remove(
-        self,
-        name: str
-    ):
-
-        if name in self.objects:
-
-            del self.objects[name]
-
-    def play(
-        self,
-        obj_name: str,
-        anim_name: str,
-        reset: bool = True
-    ):
-
-        if obj_name in self.objects:
-
-            self.objects[obj_name].play(
-                anim_name,
-                reset
-            )
-
-    def update_all(
-        self,
-        dt: int
-    ):
-
-        for obj in self.objects.values():
-
-            obj.update(dt)
-
-    def draw_all(
-        self,
-        surface: pygame.Surface
-    ):
-
-        for obj in self.objects.values():
-
-            obj.draw(surface)
-
-    def is_finished(
-        self,
-        obj_name: str
-    ) -> bool:
-
-        if obj_name in self.objects:
-
-            return self.objects[
-                obj_name
             ].is_finished()
 
         return False
