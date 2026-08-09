@@ -308,6 +308,10 @@ class SpriteObject:
         # CREATE FRAME GRID
         # ==========================================
 
+        # Jeśli total_frames nie jest ustawiony, oblicz go na podstawie max indeksu
+        if total_frames is None:
+            total_frames = max(frame_indices) + 1
+
         full_frames = animation_spritesheet.create_grid_frames(
             cols=cols,
             rows=rows,
