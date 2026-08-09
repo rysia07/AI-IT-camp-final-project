@@ -29,6 +29,9 @@ lever 300 450 100 20 left main_lever
 door 700 250 30 120 main_lever main_door
 
 
+
+
+
 # codepanel x y code name
 
 #codepanel 500 300 1234 security_panel
@@ -42,3 +45,5 @@ scoringbutton 490 490 0 button1
 # levelgate x y name
 
 levelgate 800 400 exit
+
+

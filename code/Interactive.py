@@ -1,7 +1,10 @@
+import random
+from typing import Optional
 import pygame
 from animations import SpriteObject
-
-
+# =========================================================
+# INTERACTIVE & ENVIRONMENT
+# =========================================================
 
 class Interactive:
 
@@ -9,53 +12,23 @@ class Interactive:
         self.rect = pygame.Rect(x, y, w, h)
         self.active = True
         self.color = (150, 150, 150)
-
-        # =====================================================
-        # ANIMATION
-        # =====================================================
-
         self.sprite = None
         self.current_anim = None
 
-    # =========================================================
-    # ANIMATION
-    # =========================================================
-
     def add_anim(
-        self,
-        name,
-        frames,
-        cols,
-        rows,
-        speed=100,
-        loop=True,
-        spritesheet_path=None,
-        scale=1.0
+            self,
+            name,
+            frames,
+            cols,
+            rows,
+            speed=100,
+            loop=True,
+            spritesheet_path=None,
+            scale=1.0
     ):
-        """
-        Adds an animation to the interactive object.
-
-        Example:
-
-            lever.add_anim(
-                "idle",
-                frames=[0, 1, 2],
-                cols=3,
-                rows=1,
-                speed=150,
-                loop=True,
-                spritesheet_path="../pictures/lever.png",
-                scale=2.0
-            )
-        """
-
-        # Create SpriteObject when the first animation is added
         if self.sprite is None:
-
             if spritesheet_path is None:
-                raise ValueError(
-                    "spritesheet_path is required for the first animation."
-                )
+                raise ValueError("spritesheet_path is required for the first animation.")
 
             self.sprite = SpriteObject(
                 "interactive",
@@ -76,36 +49,19 @@ class Interactive:
         )
 
     def play(self, name, reset=True):
-
-        if self.sprite is None:
-            return False
-
-        if name not in self.sprite.animations:
+        if self.sprite is None or name not in self.sprite.animations:
             return False
 
         self.sprite.play(name, reset)
         self.current_anim = name
-
         return True
 
     def update_animation(self, dt):
-
         if self.sprite is None:
             return
 
-        # Your SpriteObject expects milliseconds
-        self.sprite.update(
-            int(dt * 1000)
-        )
-
-        self.sprite.set_position(
-            self.rect.centerx,
-            self.rect.centery
-        )
-
-    # =========================================================
-    # GAME LOGIC
-    # =========================================================
+        self.sprite.update(dt)
+        self.sprite.set_position(self.rect.centerx, self.rect.centery)
 
     def update(self, creature, ghost):
         pass
@@ -113,40 +69,24 @@ class Interactive:
     def handle_event(self, event):
         pass
 
-    # =========================================================
-    # DRAW
-    # =========================================================
-
     def draw(self, surface):
-
         if self.sprite and self.sprite.current:
-
             self.sprite.draw(surface)
-
         else:
-
-            pygame.draw.rect(
-                surface,
-                self.color,
-                self.rect
-            )
-
+            pygame.draw.rect(surface, self.color, self.rect)
 
 
 class Lever(Interactive):
     def __init__(self, x, y, w=100, h=20, direction="left"):
         super().__init__(x, y, w, h)
         self.enabled = False
-        self.direction = direction  # "left", "right", "top", "bottom"
+        self.direction = direction
         self.enter_side = None
 
     def update(self, creature, ghost):
         prev_x, prev_y = ghost.last_pos.x, ghost.last_pos.y
         curr_x, curr_y = ghost.pos.x, ghost.pos.y
 
-        # =========================================================
-        # RUCH POZIOMY (Przecinanie z lewej na prawą lub z prawej na lewą)
-        # =========================================================
         if self.direction in ("left", "right"):
             y_in_bounds = self.rect.top <= curr_y <= self.rect.bottom or self.rect.top <= prev_y <= self.rect.bottom
 
@@ -167,9 +107,6 @@ class Lever(Interactive):
             else:
                 self.enter_side = None
 
-        # =========================================================
-        # RUCH PIONOWY (Przecinanie z góry do dołu lub z dołu do góry)
-        # =========================================================
         elif self.direction in ("top", "bottom"):
             x_in_bounds = self.rect.left <= curr_x <= self.rect.right or self.rect.left <= prev_x <= self.rect.right
 
@@ -191,7 +128,7 @@ class Lever(Interactive):
                 self.enter_side = None
 
     def draw(self, surface):
-        self.color = (46, 204, 113) if self.enabled else (231, 76, 60)  # Zielony / Czerwony
+        self.color = (46, 204, 113) if self.enabled else (231, 76, 60)
         super().draw(surface)
 
 
@@ -203,7 +140,7 @@ class CodePanel(Interactive):
         self.is_unlocked = False
         self.is_open = False
         self.player_near = False
-        self.color = (70, 130, 180)  # Stalowy niebieski
+        self.color = (70, 130, 180)
 
     def update(self, creature, ghost):
         self.player_near = creature.rect.colliderect(self.rect)
@@ -229,7 +166,6 @@ class CodePanel(Interactive):
                     self.current = ""
 
                 if self.current == self.code:
-                    print("Kod poprawny!")
                     self.is_unlocked = True
                     self.is_open = False
                     self.current = ""
@@ -259,7 +195,7 @@ class ScoringButton(Interactive):
         self.required_power = required_power
         self.points = 100
         self.used = False
-        self.color = (241, 196, 15)  # Żółty placeholder
+        self.color = (241, 196, 15)
 
     def update(self, creature, ghost):
         if creature.rect.colliderect(self.rect):
@@ -267,10 +203,10 @@ class ScoringButton(Interactive):
             if not self.used and current_power >= self.required_power:
                 if hasattr(creature, 'score'):
                     creature.score += self.points
-                print(f"+ {self.points} pkt! Power wynosił: {current_power}")
                 self.used = True
                 self.color = (127, 140, 141)
 
+            # Obsługa kolizji jako platforma i reset skoków
             overlap_left = creature.rect.right - self.rect.left
             overlap_right = self.rect.right - creature.rect.left
             overlap_top = creature.rect.bottom - self.rect.top
@@ -282,10 +218,8 @@ class ScoringButton(Interactive):
                 creature.rect.bottom = self.rect.top
                 creature.vel_y = 0
                 creature.pos.y = creature.rect.centery
-                if hasattr(creature, 'reset_jumps'):
-                    creature.reset_jumps()
-                else:
-                    creature.is_grounded = True
+                creature.is_grounded = True
+                creature.jumps_left = creature.max_jumps  # RESET DOUBLE JUMP
 
             elif min_overlap == overlap_bottom and creature.vel_y < 0:
                 creature.rect.top = self.rect.bottom
@@ -315,6 +249,7 @@ class Door(Interactive):
             elif hasattr(self.trigger_object, 'is_unlocked'):
                 self.is_open = self.trigger_object.is_unlocked
 
+        # Jeśli drzwi są ZAMKNIĘTE, działają jak kolizyjna ściana/platforma
         if not self.is_open and creature.rect.colliderect(self.rect):
             overlap_left = creature.rect.right - self.rect.left
             overlap_right = self.rect.right - creature.rect.left
@@ -333,10 +268,8 @@ class Door(Interactive):
                 creature.rect.bottom = self.rect.top
                 creature.vel_y = 0
                 creature.pos.y = creature.rect.centery
-                if hasattr(creature, 'reset_jumps'):
-                    creature.reset_jumps()
-                else:
-                    creature.is_grounded = True
+                creature.is_grounded = True
+                creature.jumps_left = creature.max_jumps  # RESET DOUBLE JUMP
             elif min_overlap == overlap_bottom and creature.vel_y < 0:
                 creature.rect.top = self.rect.bottom
                 creature.vel_y = 0
@@ -357,14 +290,37 @@ class LevelGate(Interactive):
         if self.triggered:
             return
 
-        if (
-            creature.rect.colliderect(self.rect)
-            and ghost.rect.colliderect(self.rect)
-        ):
+        if creature.rect.colliderect(self.rect) and ghost.rect.colliderect(self.rect):
             print("NEXT LEVEL")
             self.triggered = True
 
 
+class SafeZone(Interactive):
+    """
+    Strefa (np. schron, pole siłowe), w której postać oraz duszka chroni status bezpieczny.
+    Możesz w łatwy sposób sprawdzać, czy postać jest w SafeZone i blokować obrażenia.
+    """
+
+    def __init__(self, x, y, w=150, h=150):
+        super().__init__(x, y, w, h)
+        self.color = (46, 204, 113, 100)  # Półprzezroczysty zielony
+        self.is_ghost_inside = False
+        self.is_creature_inside = False
+
+    def update(self, creature, ghost):
+        self.is_creature_inside = self.rect.colliderect(creature.rect)
+
+    def draw(self, surface):
+        # Rysowanie półprzezroczystego obszaru
+        s = pygame.Surface((self.rect.width, self.rect.height), pygame.SRCALPHA)
+        s.fill((46, 204, 113, 80))
+        surface.blit(s, (self.rect.x, self.rect.y))
+        pygame.draw.rect(surface, (46, 204, 113), self.rect, 2)
+
+
+# =========================================================
+# INTERACTIVE MANAGER
+# =========================================================
 
 class InteractiveManager:
 
@@ -375,32 +331,17 @@ class InteractiveManager:
         self.objects.append(obj)
 
     def update_all(self, creature, ghost, dt):
-
         for obj in self.objects:
-
             if obj.active:
-
-                # Game logic
-                obj.update(
-                    creature,
-                    ghost
-                )
-
-                # Animation
-                obj.update_animation(
-                    dt
-                )
+                obj.update(creature, ghost)
+                obj.update_animation(dt)
 
     def handle_event_all(self, event):
-
         for obj in self.objects:
-
             if obj.active:
                 obj.handle_event(event)
 
     def draw_all(self, surface):
-
         for obj in self.objects:
-
             if obj.active:
                 obj.draw(surface)
