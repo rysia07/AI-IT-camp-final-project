@@ -169,7 +169,7 @@ class AudioAdapter:
 
     def update(self) -> None:
         """
-        Update fade effects. Call this in your game loop.
+        Update fade aueffects. Call this in your game loop.
         Must be called regularly for fade effects to work.
         """
         if not self.fade_config or not self.current_channel:
