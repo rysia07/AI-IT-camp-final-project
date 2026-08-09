@@ -125,6 +125,22 @@ def load_level(filepath):
                             )
                             continue
 
+<<<<<<< HEAD
+                        x = float(parts[1])
+                        y = float(parts[2])
+                        width = 23
+                        height = 21
+
+                        direction = parts[5]
+
+                        name = (
+                            parts[6]
+                            if len(parts) > 6
+                            else None
+                        )
+
+=======
+>>>>>>> master
                         lever = Lever(
                             float(parts[1]),
                             float(parts[2]),
