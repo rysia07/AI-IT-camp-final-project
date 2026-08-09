@@ -3,7 +3,6 @@ from typing import Optional
 from animations import SpriteObject
 import random
 
-
 class Character:
 
     PRIORITY_IDLE = 1
@@ -11,7 +10,7 @@ class Character:
     PRIORITY_ATTACK = 3
 
     def __init__(
-        self,
+            self,
         x: float,
         y: float,
         size: float,
@@ -41,7 +40,6 @@ class Character:
                 int(x),
                 int(y)
             )
-
         self.current_anim = None
         self.current_priority = 0
 
@@ -166,170 +164,72 @@ class Character:
             )
 
 
-
 # =========================================================
 # CREATURE
 # =========================================================
-
 class Creature(Character):
     def __init__(self, x, y, spritesheet_path=None):
+        # Dziedziczymy po klasie Character (rozmiar np. 50 px)
         super().__init__(
-            x,
-            y,
-            64,  # <-- Zwiększyliśmy rozmiar hitboksu z 32 na 64!
+            x=x,
+            y=y,
+            size=50,
             spritesheet_path=spritesheet_path
         )
 
+        self.vel_y = 0
         self.hp = 100
         self.power = 0
-        self.max_jumps = 2  # Maksymalna liczba skoków (np. 2 dla double jump)
+
+        # Wyznaczenie domyślnych nazw animacji
+        self.walk_anim = "walk"
+        self.idle_anim = "idle"
+
+        # --- USTAWIENIA SKOKU ---
+        self.max_jumps = 2  # Double Jump
         self.jumps_left = self.max_jumps
-        self.speed = 400
-        self.gravity = 2000
-        self.jump_force = -1000
-
-        self.vel_y = 0
         self.is_grounded = False
-
-    def handle_input(self, keys):
-        # Skok po naciśnięciu klawisza (np. K_SPACE)
-        if keys[pygame.K_SPACE]:  # Lub przy zdarzeniu KEYDOWN
-            self.jump()
+        self.jump_speed = 400  # Zwiększono siłę skoku dla kompatybilności z dt
 
     def jump(self):
-        # Pozwól na skok tylko, jeśli zostały jeszcze skoki
+        """Ta funkcja wykonuje się DOKŁADNIE raz na wciśnięcie W"""
         if self.jumps_left > 0:
-            self.vel_y = -self.jump_force  # Siła skoku
-            self.jumps_left -= 1
-
+            self.vel_y = -self.jump_speed  # Nadajemy prędkość w górę
+            self.jumps_left -= 1  # Odejmujemy jeden dostępny skok
+            self.is_grounded = False  # Od razu odrywamy się od ziemi!
 
     def update(self, dt, platforms=None):
-
-        keys = pygame.key.get_pressed()
-
-        # =================================================
-        # RUCH POZIOMY
-        # =================================================
-
-        moving = False
-        dx = 0
-
-        if keys[pygame.K_a]:
-
-            dx -= self.speed * dt
-            moving = True
-
-        if keys[pygame.K_d]:
-
-            dx += self.speed * dt
-            moving = True
-
-        # =================================================
-        # ANIMACJE
-        # =================================================
-
-        if moving:
-
-            if self.walk_anim:
-                self.play(
-                    self.walk_anim,
-                    reset=False
-                )
-
-        else:
-
-            if self.idle_anim:
-                self.play(
-                    self.idle_anim,
-                    reset=False
-                )
-
-        # =================================================
-        # RUCH X
-        # =================================================
-
-        self.pos.x += dx
-
-        self.update_rect()
-
-        if platforms:
-            for platform in platforms:
-
-                if self.rect.colliderect(platform):
-
-                    if dx > 0:
-
-                        self.rect.right = platform.left
-
-                    elif dx < 0:
-
-                        self.rect.left = platform.right
-
-                    self.pos.x = self.rect.centerx
-
-        # =================================================
-        # SKOK
-        # =================================================
-
-        if keys[pygame.K_w] and self.is_grounded:
-
-            self.jump()
-
-        # =================================================
-        # GRAWITACJA
-        # =================================================
-
-        current_gravity = self.gravity
-
-        if not self.is_grounded and keys[pygame.K_s]:
-
-            current_gravity *= 3
-
-        self.vel_y += current_gravity * dt
-
+        # 1. Aplikujemy grawitację
+        gravity = 1200
+        self.vel_y += gravity * dt
         self.pos.y += self.vel_y * dt
 
+        # Aktualizacja hitboksu przed sprawdzaniem kolizji
         self.update_rect()
 
-        # =================================================
-        # KOLIZJE PIONOWE
-        # =================================================
-
+        # 2. Sprawdzamy kolizję z podłożem
         self.is_grounded = False
 
         if platforms:
             for platform in platforms:
+                # Dostęp do prostokąta platformy (w zależności czy obiekt to Rect czy posiada .rect)
+                plat_rect = platform.rect if hasattr(platform, 'rect') else platform
 
-                if self.rect.colliderect(platform):
-
-                    if self.vel_y > 0:
-
-                        # LĄDOWANIE
-
-                        self.rect.bottom = platform.top
-
+                if self.rect.colliderect(plat_rect):
+                    # Kluczowe: Reagujemy TYLKO wtedy, gdy spadamy na platformę (vel_y >= 0)
+                    if self.vel_y >= 0:
+                        self.rect.bottom = plat_rect.top
+                        self.pos.y = self.rect.centery
                         self.vel_y = 0
-
                         self.is_grounded = True
+                        break
 
-                    elif self.vel_y < 0:
+        # 3. RESET SKOKÓW: Tylko w momencie, gdy wylądujemy na ziemi!
+        if self.is_grounded:
+            self.jumps_left = self.max_jumps
 
-                        # UDERZENIE OD DOŁU
-
-                        self.rect.top = platform.bottom
-
-                        self.vel_y = 0
-
-                    self.pos.y = self.rect.centery
-
-        # =================================================
-        # ANIMACJA
-        # =================================================
-
-        super().update(
-            int(dt * 1000)
-        )
-
+        # 4. Aktualizacja animacji i pozycji duszka z klasy Character
+        super().update(dt)
 
 # =========================================================
 # GHOST
