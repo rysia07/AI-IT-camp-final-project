@@ -310,10 +310,6 @@ class SafeZone(Interactive):
     def update(self, creature, ghost):
         self.is_creature_inside = self.rect.colliderect(creature.rect)
 
-        # Tworzymy lekki hitbox dla pozycji myszki/duszka
-        ghost_rect = pygame.Rect(ghost.pos.x - 5, ghost.pos.y - 5, 10, 10)
-        self.is_ghost_inside = self.rect.colliderect(ghost_rect)
-
     def draw(self, surface):
         # Rysowanie półprzezroczystego obszaru
         s = pygame.Surface((self.rect.width, self.rect.height), pygame.SRCALPHA)
