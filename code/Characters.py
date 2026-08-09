@@ -65,18 +65,28 @@ class Character:
         rows,
         speed=100,
         loop=True,
-        priority=0
+        priority=0,
+        spritesheet_path: Optional[str] = None,
+        scale: float = 1.0
     ):
+        # If no default SpriteObject exists, allow providing a spritesheet_path per-animation.
         if not self.sprite:
-            raise ValueError("Brak spritesheet_path")
+            if spritesheet_path:
+                # Create a SpriteObject using the provided spritesheet for this character.
+                self.sprite = SpriteObject("character", spritesheet_path, int(self.pos.x), int(self.pos.y))
+            else:
+                raise ValueError("Brak spritesheet_path")
 
+        # Delegate to SpriteObject.add_frames which supports per-animation spritesheet and scaling.
         self.sprite.add_frames(
             name,
             frames,
             cols,
             rows,
-            speed,
-            loop
+            frame_duration=speed,
+            loop=loop,
+            spritesheet_path=spritesheet_path,
+            scale=scale
         )
 
         self.anim_priority[name] = priority
@@ -155,14 +165,6 @@ class Character:
                 int(self.size / 2)
             )
 
-    def draw_hitbox(self, surface, color="red"):
-
-        pygame.draw.rect(
-            surface,
-            color,
-            self.rect,
-            2
-        )
 
 
 # =========================================================
@@ -180,7 +182,8 @@ class Creature(Character):
 
         self.hp = 100
         self.power = 0
-
+        self.max_jumps = 2  # Maksymalna liczba skoków (np. 2 dla double jump)
+        self.jumps_left = self.max_jumps
         self.speed = 400
         self.gravity = 2000
         self.jump_force = -1000
@@ -188,12 +191,17 @@ class Creature(Character):
         self.vel_y = 0
         self.is_grounded = False
 
+    def handle_input(self, keys):
+        # Skok po naciśnięciu klawisza (np. K_SPACE)
+        if keys[pygame.K_SPACE]:  # Lub przy zdarzeniu KEYDOWN
+            self.jump()
+
     def jump(self):
+        # Pozwól na skok tylko, jeśli zostały jeszcze skoki
+        if self.jumps_left > 0:
+            self.vel_y = -self.jump_force  # Siła skoku
+            self.jumps_left -= 1
 
-        if self.is_grounded:
-
-            self.vel_y = self.jump_force
-            self.is_grounded = False
 
     def update(self, dt, platforms=None):
 
@@ -518,8 +526,9 @@ class ShootingEnemy(Character):
         return projectile
     
     def take_damage(self, damage: int):
-        """Bierze obrażenia."""
         self.hp -= damage
+        if self.hp <= 0:
+            self.hp = 0
     
     def is_alive(self) -> bool:
         """Sprawdza, czy wróg żyje."""
