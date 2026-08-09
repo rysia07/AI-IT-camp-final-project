@@ -134,7 +134,12 @@ class LevelSelectMenu(BaseMenu):
     def __init__(self, width, height, level_list=None):
         super().__init__(width, height, "WYBÓR POZIOMU")
         if level_list is None:
-            level_list = ["level.txt", "level2.txt", "level3.txt"]
+            level_list = [
+                "level1.txt",
+                "level2.txt",
+                "level3.txt",
+                "level4.txt"
+            ]
 
         self.buttons = []
         btn_w, btn_h = 220, 50
