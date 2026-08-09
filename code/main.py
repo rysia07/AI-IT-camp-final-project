@@ -393,7 +393,9 @@ def main():
 
     available_levels = [
         "level1.txt",
-        "level2.txt"
+        "level2.txt",
+        "level3.txt",
+        "level4.txt"
     ]
 
     main_menu = MainMenu(
@@ -1048,7 +1050,6 @@ def main():
                 ghost,
                 dt
             )
-
             # =================================================
             # LEVEL GATE
             # =================================================
@@ -1056,22 +1057,95 @@ def main():
             for obj in interactive_mgr:
 
                 if getattr(
-                    obj,
-                    "triggered",
-                    False
+                        obj,
+                        "triggered",
+                        False
                 ):
 
-                    pygame.mouse.set_visible(
-                        True
-                    )
+                    # Znajdź aktualny poziom
+                    try:
+                        current_index = (
+                            available_levels.index(
+                                current_level_file
+                            )
+                        )
+                    except ValueError:
 
-                    pygame.event.set_grab(
-                        False
-                    )
+                        current_index = -1
 
-                    current_state = VICTORY
+                    # =================================================
+                    # JEST NASTĘPNY POZIOM
+                    # =================================================
 
-                    obj.triggered = False
+                    if (
+                            current_index >= 0
+                            and current_index + 1
+                            < len(available_levels)
+                    ):
+
+                        next_level = (
+                            available_levels[
+                                current_index + 1
+                                ]
+                        )
+
+                        print(
+                            f"➡️ Przejście: "
+                            f"{current_level_file} "
+                            f"-> "
+                            f"{next_level}"
+                        )
+
+                        current_level_file = next_level
+
+                        (
+                            level,
+                            interactive_mgr,
+                            platform_mgr,
+                            projectile_mgr,
+                            player,
+                            ghost,
+                            char_mgr
+                        ) = load_selected_level(
+                            current_level_file
+                        )
+
+                        obj.triggered = False
+
+                        # Ustawienie myszy z powrotem
+                        pygame.mouse.set_visible(
+                            False
+                        )
+
+                        pygame.event.set_grab(
+                            True
+                        )
+
+                        pygame.mouse.get_rel()
+
+                        current_state = PLAYING
+
+                    # =================================================
+                    # OSTATNI POZIOM
+                    # =================================================
+
+                    else:
+
+                        print(
+                            "🏆 Ukończono wszystkie poziomy!"
+                        )
+
+                        pygame.mouse.set_visible(
+                            True
+                        )
+
+                        pygame.event.set_grab(
+                            False
+                        )
+
+                        obj.triggered = False
+
+                        current_state = VICTORY
 
                     break
 
