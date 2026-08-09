@@ -20,6 +20,7 @@ from GUI import (
     VictoryMenu
 )
 from pause_menu import PauseMenu
+from audio_adapter import AudioAdapter
 
 # =========================================================
 # KONFIGURACJA I STAŁE
@@ -132,6 +133,9 @@ def load_selected_level(level_filename):
 
 def main():
     pygame.init()
+
+    audio = AudioAdapter()
+
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
     pygame.display.set_caption("Alien Space")
     clock = pygame.time.Clock()

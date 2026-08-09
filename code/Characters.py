@@ -128,7 +128,6 @@ class Character:
 # =========================================================
 # CREATURE
 # =========================================================
-python
 class Creature(Character):
 
     def __init__(self, x, y, spritesheet_path=None):
