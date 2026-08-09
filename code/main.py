@@ -7,7 +7,8 @@ from Characters import (
     Creature,
     GhostMouse,
     CharacterManager,
-    ProjectileManager
+    ProjectileManager,
+    WalkingEnemy
 )
 from Interactive import CodePanel
 from GUI import (
@@ -89,6 +90,15 @@ def create_player(start_pos):
     player.play("idle")
     return player
 
+def create_enemy(player, platforms):
+    enemy = WalkingEnemy(
+        500,
+        300,
+        target=player,
+        platforms=platforms
+    )
+
+    return enemy
 
 def reset_game(player, ghost, spawn_pos):
     """Resetuje stan gracza i ducha do wartości początkowych."""
@@ -151,10 +161,17 @@ def main():
     # --- POSTACIE ---
     player = create_player(level.player_pos)
     ghost = GhostMouse(level.player_pos[0], level.player_pos[1])
+    enemy = WalkingEnemy(
+        500,
+        300,
+        target=player,
+        platforms=level.platforms
+    )
 
     char_mgr = CharacterManager()
     char_mgr.add("player", player)
     char_mgr.add("ghost", ghost)
+    char_mgr.add("enemy", enemy)
 
     # --- MENUS ---
     main_menu = MainMenu(WIDTH, HEIGHT)
