@@ -397,7 +397,16 @@ class GhostMouse(Character):
 
 class WalkingEnemy(Character):
 
-    def __init__(self, x, y, target=None, spritesheet_path=None):
+    def __init__(
+        self,
+        x,
+        y,
+        target=None,
+        platforms=None,
+        spritesheet_path=None
+    ):
+        self.target = target
+        self.platforms = platforms
 
         super().__init__(
             x,
@@ -418,8 +427,10 @@ class WalkingEnemy(Character):
         self.is_grounded = False
 
         #Target To Follow
-        self.target = target
     def update(self, dt, platforms=None):
+
+        if platforms is None:
+            platforms = self.platforms
 
         # =====================================================
         # FOLLOW MOVEMENT
@@ -439,11 +450,35 @@ class WalkingEnemy(Character):
         # EDGE CHECK
         # =====================================================
 
+        self.update_rect()
+
         next_x = self.pos.x + dx
 
         check_x = next_x
 
-        if
+        if dx > 0:
+            check_x += self.size / 2
+
+        elif dx < 0:
+            check_x -= self.size / 2
+
+        check_y = self.rect.bottom + 2
+
+        on_platform = False
+
+        if platforms:
+
+            for platform in platforms:
+
+                if platform.collidepoint(check_x, check_y):
+
+                    on_platform = True
+                    break
+
+        if on_platform:
+            self.pos.x = next_x
+            self.update_rect()
+
         # =====================================================
         # HORIZONTAL COLLISION
         # =====================================================
