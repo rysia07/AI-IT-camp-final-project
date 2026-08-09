@@ -1,5 +1,6 @@
 import sys
 import pygame
+
 from LoadLevels import load_level
 
 from Interactive import (
@@ -10,9 +11,27 @@ from Interactive import (
     LevelGate,
     InteractiveManager
 )
-from Characters import Creature, GhostMouse, CharacterManager
-from GUI import MainMenu, OptionsMenu, CreditsMenu, FailureMenu, VictoryMenu
+
+from Characters import (
+    ShootingEnemy,
+    Creature,
+    GhostMouse,
+    CharacterManager,
+    ProjectileManager
+)
+
+from GUI import (
+    MainMenu,
+    OptionsMenu,
+    CreditsMenu,
+    FailureMenu,
+    VictoryMenu
+)
+
 from Platforms import PlatformManager
+
+projectile_manager = ProjectileManager()
+
 # =========================================================
 # INITIALIZATION
 # =========================================================
@@ -91,6 +110,15 @@ player.add_anim(
 
 player.set_walk_idle("walk", "idle")
 player.play("idle")
+
+# =========================================================
+# ENEMIES
+# =========================================================
+
+enemies = level.enemies
+
+print(f"Loaded enemies: {len(enemies)}")
+
 
 ghost = GhostMouse(0, 0)
 
@@ -219,33 +247,61 @@ while running:
     # =====================================================
     # UPDATE
     # =====================================================
-
     if current_state == PLAYING:
-        manager.update_all(dt, platform_mgr.platforms)
-        interactive_manager.update_all(player, ghost, dt)
+
+        # =========================
+        # PLAYER
+        # =========================
+
+        manager.update_all(
+            dt,
+            platform_mgr.platforms
+        )
+
+        # =========================
+        # ENEMIES
+        # =========================
+
+        for enemy in enemies:
+
+            enemy.update(
+                dt,
+                player_pos=player.pos,
+                platforms=platform_mgr.platforms
+            )
+
+            # Shoot at player
+            if (
+                    (enemy.pos - player.pos).length()
+                    < enemy.detection_range
+                    and enemy.shoot_cooldown <= 0
+            ):
+                projectile = enemy.shoot(
+                    player.pos.x,
+                    player.pos.y
+                )
+
+                projectile_manager.add(projectile)
+
+                enemy.shoot_cooldown = enemy.shoot_interval
+
+        # =========================
+        # PROJECTILES
+        # =========================
+
+        projectile_manager.update(dt)
+
+        # =========================
+        # INTERACTIVE
+        # =========================
+
+        interactive_manager.update_all(
+            player,
+            ghost,
+            dt
+        )
+
         pygame.event.set_grab(True)
-
-        # Warunki zakończenia rozgrywki:
-        if player.hp <= 0 or ghost.hp <= 0:
-            current_state = FAILURE
-            pygame.mouse.set_visible(True)
-
-        if next_level:
-            current_state = VICTORY
-            pygame.mouse.set_visible(True)
-
-    else:
-        pygame.event.set_grab(False)
-        if current_state == MENU:
-            menu.update(mouse_pos)
-        elif current_state == OPTIONS:
-            options_menu.update(mouse_pos)
-        elif current_state == CREDITS:
-            credits_menu.update(mouse_pos)
-        elif current_state == FAILURE:
-            failure_menu.update(mouse_pos)
-        elif current_state == VICTORY:
-            victory_menu.update(mouse_pos)
 
     # =====================================================
     # DRAW
@@ -273,6 +329,10 @@ while running:
         interactive_manager.draw_all(screen)
         manager.draw_all(screen)
 
+        # Draw enemies
+        for enemy in enemies:
+            enemy.draw(screen)
+        projectile_manager.draw_all(screen)
         # HUD / Punkty życia
         font = pygame.font.Font(None, 32)
         text = font.render(
