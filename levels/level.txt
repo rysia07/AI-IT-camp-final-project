@@ -1,19 +1,44 @@
-# Level file format: x y width height name
-# Colors are random!
+# ==================================
+# PLAYER
+# ==================================
 
-p 250 -10
-# Ground platform
-0 1080 2000 50 ground
-
-# Obstacle platforms
-#200 400 100 50 platform1
-#500 300 150 50 platform2
-#300 250 80 40 platform3
+p 450 300
 
 
+# ==================================
+# PLATFORMS
+# ==================================
 
-# Walls
--20 100 20 1000 wall_left
-1920 100 20 1000 wall_right
+platform 0 550 900 50 floor
+platform 300 500 200 20 platform1
+platform 600 380 200 20 platform2
+platform 900 250 200 20 platform3
 
 
+# ==================================
+# INTERACTIVE OBJECTS
+# ==================================
+
+# lever x y width height direction name
+
+lever 300 450 100 20 left main_lever
+
+
+# door x y width height trigger name
+
+door 700 250 30 120 main_lever main_door
+
+
+# codepanel x y code name
+
+#codepanel 500 300 1234 security_panel
+
+
+# scoringbutton x y required_power name
+
+scoringbutton 490 490 0 button1
+
+
+# levelgate x y name
+
+levelgate 800 400 exit
