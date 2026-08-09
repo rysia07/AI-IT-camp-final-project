@@ -1,6 +1,7 @@
+
 import pygame
 
-from Characters import ShootingEnemy, Projectile
+from Characters import ShootingEnemy
 from Interactive import (
     Lever,
     CodePanel,
@@ -12,8 +13,9 @@ from Interactive import (
 
 
 class LevelData:
+
     def __init__(self):
-        # Obiekty pygame.Rect do kolizji platform
+        # Platformy będące obiektami pygame.Rect
         self.platforms = []
 
         # Wrogowie
@@ -25,45 +27,74 @@ class LevelData:
         # Menedżer obiektów interaktywnych
         self.interactive_manager = InteractiveManager()
 
-        # Słownik zmapowanych obiektów po nazwach
+        # Nazwane obiekty:
+        # np. lever1, door1, panel1
         self.objects = {}
 
 
 def load_level(filepath):
+
     level = LevelData()
+
+    # Drzwi mogą wskazywać na obiekt zdefiniowany
+    # wcześniej albo później w pliku.
     pending_doors = []
 
     try:
+
         with open(filepath, "r", encoding="utf-8") as file:
+
             for line_number, line in enumerate(file, 1):
+
                 line = line.strip()
 
-                # Ignorowanie komentarzy i pustych linii
+                # Puste linie i komentarze
                 if not line or line.startswith("#"):
                     continue
 
                 parts = line.replace(",", " ").split()
+
                 if not parts:
                     continue
 
                 object_type = parts[0].lower()
 
                 try:
-                    # =================================================
-                    # PLAYER: p x y
-                    # =================================================
-                    if object_type == "p":
-                        if len(parts) < 3:
-                            print(f"Line {line_number}: 'p' requires 'x y'")
-                            continue
-                        level.player_pos = (float(parts[1]), float(parts[2]))
 
                     # =================================================
-                    # PLATFORM: platform x y width height [name]
+                    # PLAYER
+                    #
+                    # p x y
                     # =================================================
+
+                    if object_type == "p":
+
+                        if len(parts) < 3:
+                            print(
+                                f"❌ Line {line_number}: "
+                                "'p' requires 'x y'"
+                            )
+                            continue
+
+                        level.player_pos = (
+                            float(parts[1]),
+                            float(parts[2])
+                        )
+
+                    # =================================================
+                    # PLATFORM
+                    #
+                    # platform x y width height [name]
+                    # =================================================
+
                     elif object_type == "platform":
+
                         if len(parts) < 5:
-                            print(f"Line {line_number}: 'platform' requires 'x y width height [name]'")
+                            print(
+                                f"❌ Line {line_number}: "
+                                "'platform' requires "
+                                "'x y width height [name]'"
+                            )
                             continue
 
                         rect = pygame.Rect(
@@ -72,17 +103,26 @@ def load_level(filepath):
                             int(float(parts[3])),
                             int(float(parts[4]))
                         )
+
                         level.platforms.append(rect)
 
                         if len(parts) > 5:
                             level.objects[parts[5]] = rect
 
                     # =================================================
-                    # LEVER: lever x y width height direction [name]
+                    # LEVER
+                    #
+                    # lever x y width height direction [name]
                     # =================================================
+
                     elif object_type == "lever":
+
                         if len(parts) < 6:
-                            print(f"Line {line_number}: 'lever' requires 'x y width height direction [name]'")
+                            print(
+                                f"❌ Line {line_number}: "
+                                "'lever' requires "
+                                "'x y width height direction [name]'"
+                            )
                             continue
 
                         lever = Lever(
@@ -90,19 +130,28 @@ def load_level(filepath):
                             float(parts[2]),
                             float(parts[3]),
                             float(parts[4]),
-                            direction=parts[5]
+                            direction=parts[5].lower()
                         )
+
                         level.interactive_manager.add(lever)
 
                         if len(parts) > 6:
                             level.objects[parts[6]] = lever
 
                     # =================================================
-                    # DOOR: door x y width height trigger_name [name]
+                    # DOOR
+                    #
+                    # door x y width height trigger_name [name]
                     # =================================================
+
                     elif object_type == "door":
+
                         if len(parts) < 6:
-                            print(f"Line {line_number}: 'door' requires 'x y width height trigger_name [name]'")
+                            print(
+                                f"❌ Line {line_number}: "
+                                "'door' requires "
+                                "'x y width height trigger_name [name]'"
+                            )
                             continue
 
                         pending_doors.append({
@@ -111,71 +160,133 @@ def load_level(filepath):
                             "width": float(parts[3]),
                             "height": float(parts[4]),
                             "trigger": parts[5],
-                            "name": parts[6] if len(parts) > 6 else None,
+                            "name": (
+                                parts[6]
+                                if len(parts) > 6
+                                else None
+                            ),
                             "line": line_number
                         })
 
                     # =================================================
-                    # CODE PANEL: codepanel x y code [name]
+                    # CODE PANEL
+                    #
+                    # codepanel x y code [name]
                     # =================================================
+
                     elif object_type == "codepanel":
+
                         if len(parts) < 4:
-                            print(f"Line {line_number}: 'codepanel' requires 'x y code [name]'")
+                            print(
+                                f"❌ Line {line_number}: "
+                                "'codepanel' requires "
+                                "'x y code [name]'"
+                            )
                             continue
 
-                        panel = CodePanel(float(parts[1]), float(parts[2]), code=parts[3])
+                        panel = CodePanel(
+                            float(parts[1]),
+                            float(parts[2]),
+                            code=parts[3]
+                        )
+
                         level.interactive_manager.add(panel)
 
                         if len(parts) > 4:
                             level.objects[parts[4]] = panel
 
                     # =================================================
-                    # SCORING BUTTON: scoringbutton x y power [name]
+                    # SCORING BUTTON
+                    #
+                    # scoringbutton x y power [name]
                     # =================================================
+
                     elif object_type == "scoringbutton":
+
                         if len(parts) < 4:
-                            print(f"Line {line_number}: 'scoringbutton' requires 'x y required_power [name]'")
+                            print(
+                                f"❌ Line {line_number}: "
+                                "'scoringbutton' requires "
+                                "'x y required_power [name]'"
+                            )
                             continue
 
-                        button = ScoringButton(float(parts[1]), float(parts[2]), required_power=int(parts[3]))
+                        button = ScoringButton(
+                            float(parts[1]),
+                            float(parts[2]),
+                            required_power=int(parts[3])
+                        )
+
                         level.interactive_manager.add(button)
 
                         if len(parts) > 4:
                             level.objects[parts[4]] = button
 
                     # =================================================
-                    # LEVEL GATE: levelgate x y [name]
+                    # LEVEL GATE
+                    #
+                    # levelgate x y [name]
                     # =================================================
+
                     elif object_type == "levelgate":
+
                         if len(parts) < 3:
-                            print(f"Line {line_number}: 'levelgate' requires 'x y [name]'")
+                            print(
+                                f"❌ Line {line_number}: "
+                                "'levelgate' requires 'x y [name]'"
+                            )
                             continue
 
-                        gate = LevelGate(float(parts[1]), float(parts[2]))
+                        gate = LevelGate(
+                            float(parts[1]),
+                            float(parts[2])
+                        )
+
                         level.interactive_manager.add(gate)
 
                         if len(parts) > 3:
                             level.objects[parts[3]] = gate
 
                     # =================================================
-                    # SHOOTING ENEMY: enemy x y [spritesheet] [name]
+                    # ENEMY
+                    #
+                    # enemy x y
+                    # enemy x y enemy_1
+                    # enemy x y spritesheet.png
+                    # enemy x y spritesheet.png enemy_1
                     # =================================================
-                    elif object_type in ("enemy", "shootingenemy"):
+
+                    elif object_type in (
+                        "enemy",
+                        "shootingenemy"
+                    ):
+
                         if len(parts) < 3:
-                            print(f"Line {line_number}: 'enemy' requires 'x y [spritesheet] [name]'")
+                            print(
+                                f"❌ Line {line_number}: "
+                                "'enemy' requires "
+                                "'x y [spritesheet] [name]'"
+                            )
                             continue
 
-                        # Bezpieczne rozróżnienie pomiędzy ścieżką do arkusza a samą nazwą
                         spritesheet = None
                         enemy_name = None
 
                         if len(parts) == 4:
-                            # Jeśli są 4 części, zakładamy że wpisano samą nazwę wroga (np. enemy 100 200 enemy_1)
-                            if "." in parts[3] or "/" in parts[3] or "\\" in parts[3]:
-                                spritesheet = parts[3]
+
+                            value = parts[3]
+
+                            if (
+                                "." in value
+                                or "/" in value
+                                or "\\" in value
+                            ):
+                                spritesheet = value
                             else:
-                                enemy_name = parts[3]
+                                enemy_name = value
+
                         elif len(parts) > 4:
+
                             spritesheet = parts[3]
                             enemy_name = parts[4]
 
@@ -184,28 +295,49 @@ def load_level(filepath):
                             float(parts[2]),
                             spritesheet_path=spritesheet
                         )
+
                         level.enemies.append(enemy)
 
                         if enemy_name:
                             level.objects[enemy_name] = enemy
 
+                    # =================================================
+                    # NIEZNANY OBIEKT
+                    # =================================================
+
                     else:
-                        print(f"⚠️ Line {line_number}: Unknown object '{object_type}'")
+
+                        print(
+                            f"⚠️ Line {line_number}: "
+                            f"Unknown object '{object_type}'"
+                        )
 
                 except (ValueError, IndexError) as error:
-                    print(f"❌ Line {line_number}: {line}\n   {error}")
 
-        # =========================================================
-        # łączymy DRZWI Z ICH SPOILERAMI / DŹWIGNIAMI (TRIGGERS)
-        # =========================================================
+                    print(
+                        f"❌ Line {line_number}: {line}\n"
+                        f"   {error}"
+                    )
+
+        # =============================================================
+        # ŁĄCZENIE DRZWI Z TRIGGERAMI
+        # =============================================================
+
         for door_data in pending_doors:
-            trigger = level.objects.get(door_data["trigger"])
+
+            trigger = level.objects.get(
+                door_data["trigger"]
+            )
 
             if trigger is None:
+
                 print(
-                    f"❌ Door on line {door_data['line']} "
-                    f"references unknown object '{door_data['trigger']}'"
+                    f"❌ Door on line "
+                    f"{door_data['line']} references "
+                    f"unknown object "
+                    f"'{door_data['trigger']}'"
                 )
+
                 continue
 
             door = Door(
@@ -215,19 +347,31 @@ def load_level(filepath):
                 door_data["height"],
                 trigger_object=trigger
             )
+
             level.interactive_manager.add(door)
 
             if door_data["name"]:
-                level.objects[door_data["name"]] = door
+
+                level.objects[
+                    door_data["name"]
+                ] = door
 
     except FileNotFoundError:
-        print(f"❌ Level file not found: {filepath}")
+
+        print(
+            f"❌ Level file not found: {filepath}"
+        )
 
     print(
-        f"Level loaded: {len(level.platforms)} platforms, "
+        f"Level loaded: "
+        f"{len(level.platforms)} platforms, "
         f"{len(level.enemies)} enemies, "
-        f"{len(level.interactive_manager)} interactive objects"
+        f"{len(level.interactive_manager)} "
+        f"interactive objects"
     )
-    print(f"Player spawn: {level.player_pos}")
+
+    print(
+        f"Player spawn: {level.player_pos}"
+    )
 
     return level
