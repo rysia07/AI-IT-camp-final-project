@@ -254,7 +254,7 @@ class Character:
 # =========================================================
 # CREATURE
 # =========================================================
-
+python
 class Creature(Character):
 
     def __init__(
@@ -271,10 +271,14 @@ class Creature(Character):
             spritesheet_path=spritesheet_path
         )
 
+<<<<<<< HEAD
         # =================================================
         # STATS
         # =================================================
 
+=======
+        self.vel_x = 0
+>>>>>>> master
         self.vel_y = 0
 
         self.hp = 100
@@ -298,7 +302,13 @@ class Creature(Character):
 
         self.jump_speed = 400
 
+<<<<<<< HEAD
         # =================================================
+=======
+        # FIZYKA
+        self.gravity = 1200
+
+>>>>>>> master
         # ANIMACJE
         # =================================================
 
@@ -319,6 +329,7 @@ class Creature(Character):
 
             self.is_grounded = False
 
+<<<<<<< HEAD
 <<<<<<< HEAD
     # =====================================================
     # UPDATE
@@ -348,15 +359,37 @@ class Creature(Character):
         if keys[pygame.K_d]:
 
             dx += self.speed * dt
+=======
+    def move(self, direction):
+        """
+        direction:
+            -1 = lewo
+             0 = brak ruchu
+             1 = prawo
+        """
+        self.vel_x = direction * self.speed
+
+    def update(self, dt, platforms=None, *args, **kwargs):
+
+        # =====================================================
+        # RUCH POZIOMY
+        # =====================================================
+
+        dx = self.vel_x * dt
+>>>>>>> master
 
         self.pos.x += dx
 
         self.update_rect()
 
+<<<<<<< HEAD
         # =================================================
         # KOLIZJE X
         # =================================================
 
+=======
+        # Kolizje poziome
+>>>>>>> master
         if platforms:
 
             for platform in platforms:
@@ -367,6 +400,7 @@ class Creature(Character):
                     else platform
                 )
 
+<<<<<<< HEAD
                 if self.rect.colliderect(
                     plat_rect
                 ):
@@ -421,7 +455,49 @@ class Creature(Character):
         # KOLIZJE Y
         # =================================================
 
+=======
+                if self.rect.colliderect(plat_rect):
+
+                    if dx > 0:
+                        self.rect.right = plat_rect.left
+
+                    elif dx < 0:
+                        self.rect.left = plat_rect.right
+
+                    self.pos.x = self.rect.centerx
+
+        # =====================================================
+        # ANIMACJA
+        # =====================================================
+
+        if abs(self.vel_x) > self.movement_threshold:
+
+            if self.walk_anim:
+                self.play(self.walk_anim, reset=False)
+
+        else:
+
+            if self.idle_anim:
+                self.play(self.idle_anim, reset=False)
+
+        # =====================================================
+        # GRAWITACJA
+        # =====================================================
+
+        was_grounded = self.is_grounded
+
+        self.vel_y += self.gravity * dt
+
+        self.pos.y += self.vel_y * dt
+        self.update_rect()
+
+        # Domyślnie nie jesteśmy na ziemi.
+>>>>>>> master
         self.is_grounded = False
+
+        # =====================================================
+        # KOLIZJE PIONOWE
+        # =====================================================
 
         if platforms:
 
@@ -433,6 +509,7 @@ class Creature(Character):
                     else platform
                 )
 
+<<<<<<< HEAD
                 if self.rect.colliderect(
                     plat_rect
                 ):
@@ -470,6 +547,38 @@ class Creature(Character):
                         self.vel_y = 0
 
                     break
+=======
+                if not self.rect.colliderect(plat_rect):
+                    continue
+
+                # Spadanie / stanie na platformie
+                if self.vel_y >= 0:
+
+                    self.rect.bottom = plat_rect.top
+
+                    self.pos.y = self.rect.centery
+
+                    self.vel_y = 0
+
+                    self.is_grounded = True
+
+                    self.jumps_left = self.max_jumps
+
+                # Uderzenie głową
+                elif self.vel_y < 0:
+
+                    self.rect.top = plat_rect.bottom
+
+                    self.pos.y = self.rect.centery
+
+                    self.vel_y = 0
+
+                break
+
+        # =====================================================
+        # ANIMACJA / SPRITE
+        # =====================================================
+>>>>>>> master
 
         # =================================================
         # ANIMACJA
@@ -486,12 +595,16 @@ class Creature(Character):
 
 class GhostMouse(Character):
 
+<<<<<<< HEAD
     def __init__(
         self,
         x=0,
         y=0,
         spritesheet_path=None
     ):
+=======
+    def __init__(self, x=0, y=0, spritesheet_path=None):
+>>>>>>> master
 
         super().__init__(
             x,
@@ -531,6 +644,7 @@ class GhostMouse(Character):
         )
 =======
     def update(self, dt, platforms=None, *args, **kwargs):
+<<<<<<< HEAD
         self.last_pos = self.pos.copy()
         mouse_pos = pygame.Vector2(pygame.mouse.get_pos())
 >>>>>>> master
@@ -637,6 +751,17 @@ class GhostMouse(Character):
         super().update(
             dt
         )
+=======
+
+        # Tylko synchronizacja hitboxa i animacji.
+        # last_pos jest zapisywane przed ruchem w main.py.
+
+        self.update_rect()
+
+        super().update(dt)
+>>>>>>> master
+
+
 
 
 # =========================================================
@@ -1223,9 +1348,17 @@ class CharacterManager:
             else:
                 character.update(dt)
 
+    def update(self, dt, platforms=None, player_pos=None):
+        """Alias dla update_all."""
+        self.update_all(dt, platforms=platforms, player_pos=player_pos)
+
     def draw_all(self, surface):
         for character in self.characters.values():
             character.draw(surface)
+
+    def draw(self, surface):
+        """Alias dla draw_all."""
+        self.draw_all(surface)
 
 
 # =========================================================
@@ -1280,6 +1413,10 @@ class ProjectileManager:
     def draw_all(self, surface):
         for projectile in self.projectiles:
             projectile.draw(surface)
+
+    def draw(self, surface):
+        """Alias dla draw_all."""
+        self.draw_all(surface)
 
     def get_projectiles(self):
         return self.projectiles.copy()

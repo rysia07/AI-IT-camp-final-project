@@ -711,6 +711,18 @@ def reset_game(
 
     ghost.update_rect()
 
+<<<<<<< HEAD
+=======
+def move_ghost_with_collisions(ghost, dx, dy, platforms):
+    """Przesuwa ducha z precyzyjną kolizją w osiach X i Y."""
+    # Użyj istniejącego rect zamiast tworzyć nowy
+    if not hasattr(ghost, 'rect') or ghost.rect is None:
+        width = getattr(ghost, 'width', getattr(ghost, 'size', 32))
+        height = getattr(ghost, 'height', getattr(ghost, 'size', 32))
+        ghost.rect = pygame.Rect(int(ghost.pos.x), int(ghost.pos.y), width, height)
+
+    ghost_rect = ghost.rect.copy()
+>>>>>>> master
 
 <<<<<<< HEAD
 # =========================================================
@@ -842,6 +854,7 @@ def move_ghost_with_collisions(
 
             elif dy < 0:
 
+<<<<<<< HEAD
                 ghost_rect.top = (
                     plat_rect.bottom
                 )
@@ -859,6 +872,11 @@ def move_ghost_with_collisions(
     )
 
     ghost.update_rect()
+=======
+    ghost.pos.x = float(ghost_rect.x)
+    ghost.pos.y = float(ghost_rect.y)
+    ghost.rect.topleft = (ghost_rect.x, ghost_rect.y)
+>>>>>>> master
 
 
 # =========================================================
@@ -1751,8 +1769,8 @@ def main():
             elif hasattr(char_mgr, 'update'):
                 char_mgr.update(dt, platforms=all_obstacles)
             else:
-                player.update(dt, platforms=platform_mgr)
-                ghost.update(dt, platforms=platform_mgr)
+                player.update(dt, platforms=all_obstacles)
+                ghost.update(dt, platforms=all_obstacles)
 
             # Aktualizacja wrogów i ich strzelanie
             for enemy in level.enemies:

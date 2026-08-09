@@ -363,14 +363,14 @@ class InteractiveManager:
     # METODY GRY (Pętla Pygame)
     # =========================================================
 
-    def update(self, player, *args, **kwargs):
+    def update(self, player, ghost=None, dt=0):
         for obj in self.objects:
             if hasattr(obj, "update"):
-                obj.update(player, *args, **kwargs)
+                obj.update(player, ghost=ghost, dt=dt)
 
     # Aliasy zapewniające pełną kompatybilność z różnymi nazwami w main.py
-    def update_all(self, player, *args, **kwargs):
-        self.update(player, *args, **kwargs)
+    def update_all(self, player, ghost=None, dt=0):
+        self.update(player, ghost=ghost, dt=dt)
 
     def handle_event(self, event):
         for obj in self.objects:
