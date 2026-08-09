@@ -226,25 +226,57 @@ class Creature(Character):
 # =========================================================
 # GHOST
 # =========================================================
-
 class GhostMouse(Character):
 
     def __init__(self, x=0, y=0, spritesheet_path=None):
-        super().__init__(x, y, 20, spritesheet_path=spritesheet_path)
+        super().__init__(x, y, 30, spritesheet_path=spritesheet_path)
         self.hp = 50
 
-    def update(self, dt):
+    def update(self, dt, platforms=None):
         self.last_pos = self.pos.copy()
-        self.pos = pygame.Vector2(pygame.mouse.get_pos())
+        mouse_pos = pygame.Vector2(pygame.mouse.get_pos())
+
+        # ----------------------------------------------------
+        # 1. RUCH I KOLIZJA POZIOMA (X)
+        # ----------------------------------------------------
+        dx = mouse_pos.x - self.pos.x
+        self.pos.x += dx
+        self.update_rect()
+
+        if platforms:
+            for platform in platforms:
+                plat_rect = platform.rect if hasattr(platform, "rect") else platform
+                if self.rect.colliderect(plat_rect):
+                    if dx > 0:  # Ruch w prawo -> zatrzymaj na lewej krawędzi platformy
+                        self.rect.right = plat_rect.left
+                    elif dx < 0:  # Ruch w lewo -> zatrzymaj na prawej krawędzi platformy
+                        self.rect.left = plat_rect.right
+                    self.pos.x = self.rect.centerx
+
+        # ----------------------------------------------------
+        # 2. RUCH I KOLIZJA PIONOWA (Y)
+        # ----------------------------------------------------
+        dy = mouse_pos.y - self.pos.y
+        self.pos.y += dy
+        self.update_rect()
+
+        if platforms:
+            for platform in platforms:
+                plat_rect = platform.rect if hasattr(platform, "rect") else platform
+                if self.rect.colliderect(plat_rect):
+                    if dy > 0:  # Ruch w dół -> zatrzymaj na górnej krawędzi platformy
+                        self.rect.bottom = plat_rect.top
+                    elif dy < 0:  # Ruch w górę -> zatrzymaj na dolnej krawędzi platformy
+                        self.rect.top = plat_rect.bottom
+                    self.pos.y = self.rect.centery
+
         super().update(dt)
 
 
 # =========================================================
 # CHARACTER MANAGER
 # =========================================================
-
 class CharacterManager:
-
     def __init__(self):
         self.characters = {}
 
@@ -260,7 +292,7 @@ class CharacterManager:
 
     def update_all(self, dt, platforms=None):
         for character in self.characters.values():
-            if isinstance(character, Creature):
+            if isinstance(character, (Creature, GhostMouse)):
                 character.update(dt, platforms)
             else:
                 character.update(dt)
