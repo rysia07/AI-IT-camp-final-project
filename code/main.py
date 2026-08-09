@@ -139,6 +139,8 @@ def main():
     victory_menu = VictoryMenu(WIDTH, HEIGHT)
     pause_menu = PauseMenu(WIDTH, HEIGHT)
 
+    test_death_button = pygame.Rect(700, 500, 150, 50)
+
     current_state = MENU
     previous_state = MENU
     running = True
@@ -196,6 +198,9 @@ def main():
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 if current_state == PLAYING:
                     interactive_mgr.handle_event_all(event)
+
+                    if test_death_button.collidepoint(event.pos):
+                        player.hp = 0
 
                 elif current_state == MENU:
                     action = main_menu.handle_click(event.pos, (1, 0, 0))
@@ -298,6 +303,12 @@ def main():
 
             projectile_mgr.update(dt)
             interactive_mgr.update_all(player, ghost, dt)
+            if current_state == PLAYING:
+
+                if player.hp <= 0:
+                    current_state = FAILURE
+                    pygame.mouse.set_visible(True)
+                    pygame.event.set_grab(False)
 
         # ----------------------------------------------------
         # 3. RYSOWANIE (DRAW)
