@@ -4,25 +4,14 @@
 
 p 44 510
 
-platform 177 120 150 30 new_platform
-enemy 510 322 none new_enemy
-lever 800 424 100 20 left new_lever
-door 728 480 30 120 button1 new_door
-door 725 366 30 120 button1 new_door
-door 727 257 30 120 button1 new_door
-door 726 145 30 120 button1 new_door
-door 729 29 30 120 button1 new_door
-door 729 0 30 120 button1 new_door
-scoringbutton 332 445 0 new_button
-lever 201 358 100 20 left new_lever
-enemy 200 200 none new_enemy
-door 200 200 30 120 button1 new_door
-door 200 200 30 120 button1 new_door
-enemy 200 200 none new_enemy
-enemy 200 200 none new_enemy
-enemy 200 200 none new_enemy
-door 200 200 30 120 button1 new_door
-levelgate 814 200 new_gate
+platform 720 127 150 30 new_platform
+door 0 450 30 120 button1 new_door
+scoringbutton 3 248 0 new_button
+enemy 43 242 none new_enemy
+levelgate 808 46 new_gate
 platform 0 570 150 30 new_platform
-platform 195 495 150 30 new_platform
-platform 496 266 150 30 new_platform
+platform 227 504 150 30 new_platform
+platform 414 391 150 30 new_platform
+platform 198 319 150 30 new_platform
+platform 3 287 150 30 new_platform
+platform 593 255 150 30 new_platform
