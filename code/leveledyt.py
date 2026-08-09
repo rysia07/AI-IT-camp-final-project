@@ -46,7 +46,7 @@ os.makedirs(
 
 DEFAULT_LEVEL = os.path.join(
     LEVELS_DIR,
-    "level.txt"
+    ""
 )
 
 
@@ -826,7 +826,7 @@ class LevelEditor:
                     )
 
         # ----------------------------------------------------
-        # level.txt = podstawowy level
+        #
         # następny = level2
         # ----------------------------------------------------
 
