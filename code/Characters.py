@@ -1,4 +1,3 @@
-
 import random
 from typing import Optional
 
@@ -26,7 +25,7 @@ class Character:
         spritesheet_path: Optional[str] = None
     ):
 
-        # POS = ŚRODEK POSTACI / HITBOXA
+        # POS = środek postaci / hitboxa
         self.pos = pygame.Vector2(x, y)
 
         # Poprzednia pozycja
@@ -35,7 +34,10 @@ class Character:
         self.size = size
         self.image = image
 
+        # =====================================================
         # HITBOX
+        # =====================================================
+
         self.rect = pygame.Rect(
             0,
             0,
@@ -71,6 +73,7 @@ class Character:
         self.idle_anim = None
 
         self.is_paused = False
+
         self.movement_threshold = 0.5
 
     # =========================================================
@@ -186,6 +189,7 @@ class Character:
         if self.sprite:
 
             if self.sprite.is_finished():
+
                 self.current_priority = 0
 
             self.sprite.update(dt)
@@ -234,6 +238,8 @@ class Creature(Character):
         self,
         x,
         y,
+        speed=400,
+        jump_force=-700,
         spritesheet_path=None
     ):
 
@@ -244,27 +250,45 @@ class Creature(Character):
             spritesheet_path=spritesheet_path
         )
 
+        # =====================================================
+        # RUCH
+        # =====================================================
+
         self.vel_x = 0.0
         self.vel_y = 0.0
 
-        self.hp = 100
-        self.power = 0
-        self.score = 0
+        self.speed = speed
 
-        # RUCH
-        self.speed = 400
+        # =====================================================
         # SKOK
+        # =====================================================
+
         self.max_jumps = 2
         self.jumps_left = self.max_jumps
 
         self.is_grounded = False
 
-        self.jump_speed = 700
+        # jump_force jest ujemny, bo Y rośnie w dół
+        self.jump_force = jump_force
 
+        # =====================================================
         # FIZYKA
+        # =====================================================
+
         self.gravity = 1200
 
+        # =====================================================
+        # STATYSTYKI
+        # =====================================================
+
+        self.hp = 100
+        self.power = 0
+        self.score = 0
+
+        # =====================================================
         # ANIMACJE
+        # =====================================================
+
         self.walk_anim = "walk"
         self.idle_anim = "idle"
 
@@ -274,13 +298,16 @@ class Creature(Character):
 
     def jump(self):
 
-        if self.jumps_left > 0:
+        if self.jumps_left <= 0:
+            return False
 
-            self.vel_y = -self.jump_speed
+        self.vel_y = self.jump_force
 
-            self.jumps_left -= 1
+        self.jumps_left -= 1
 
-            self.is_grounded = False
+        self.is_grounded = False
+
+        return True
 
     # =========================================================
     # MOVE
@@ -308,6 +335,154 @@ class Creature(Character):
         return obj
 
     # =========================================================
+    # COLLISION X
+    # =========================================================
+
+    def _move_horizontal(
+        self,
+        dt,
+        platforms
+    ):
+
+        dx = self.vel_x * dt
+
+        if dx == 0:
+            return
+
+        self.pos.x += dx
+
+        self.update_rect()
+
+        for platform in platforms:
+
+            platform_rect = self.get_rect(platform)
+
+            if not self.rect.colliderect(platform_rect):
+                continue
+
+            if dx > 0:
+
+                self.rect.right = platform_rect.left
+
+            elif dx < 0:
+
+                self.rect.left = platform_rect.right
+
+            self.pos.x = self.rect.centerx
+
+    # =========================================================
+    # COLLISION Y
+    # =========================================================
+
+    def _move_vertical(
+        self,
+        dt,
+        platforms
+    ):
+
+        # Zapamiętujemy poprzedni dół/górę.
+        # Dzięki temu łatwiej rozróżnić:
+        # - lądowanie
+        # - uderzenie głową
+        old_rect = self.rect.copy()
+
+        # Grawitacja
+        self.vel_y += self.gravity * dt
+
+        # Ruch pionowy
+        self.pos.y += self.vel_y * dt
+
+        self.update_rect()
+
+        landed = False
+
+        for platform in platforms:
+
+            platform_rect = self.get_rect(platform)
+
+            if not self.rect.colliderect(platform_rect):
+                continue
+
+            # =================================================
+            # SPADANIE / LĄDOWANIE
+            # =================================================
+
+            if self.vel_y >= 0:
+
+                # Sprawdzamy, czy wcześniej byliśmy nad platformą.
+                if old_rect.bottom <= platform_rect.top:
+
+                    self.rect.bottom = platform_rect.top
+
+                    self.pos.y = self.rect.centery
+
+                    self.vel_y = 0
+
+                    landed = True
+
+            # =================================================
+            # SKOK / UDERZENIE GŁOWĄ
+            # =================================================
+
+            else:
+
+                if old_rect.top >= platform_rect.bottom:
+
+                    self.rect.top = platform_rect.bottom
+
+                    self.pos.y = self.rect.centery
+
+                    self.vel_y = 0
+
+        # =====================================================
+        # IS GROUNDED
+        # =====================================================
+
+        self.is_grounded = landed
+
+        if landed:
+
+            self.jumps_left = self.max_jumps
+
+    # =========================================================
+    # CHECK GROUND
+    # =========================================================
+
+    def _check_ground(
+        self,
+        platforms
+    ):
+
+        # Mały prostokąt 1 px pod nogami.
+        #
+        # Dzięki temu is_grounded nie będzie
+        # przypadkowo przełączało się 0/1.
+
+        ground_check = pygame.Rect(
+            self.rect.left + 2,
+            self.rect.bottom,
+            max(1, self.rect.width - 4),
+            2
+        )
+
+        for platform in platforms:
+
+            platform_rect = self.get_rect(platform)
+
+            if ground_check.colliderect(platform_rect):
+
+                # Tylko jeśli naprawdę jesteśmy na górze
+                # platformy.
+                if abs(
+                    self.rect.bottom
+                    - platform_rect.top
+                ) <= 2:
+
+                    return True
+
+        return False
+
+    # =========================================================
     # UPDATE
     # =========================================================
 
@@ -323,47 +498,28 @@ class Creature(Character):
             platforms = []
 
         # =====================================================
+        # POPRZEDNIA POZYCJA
+        # =====================================================
+
+        self.last_pos = self.pos.copy()
+
+        # =====================================================
         # RUCH POZIOMY
         # =====================================================
 
-        dx = self.vel_x * dt
-
-        self.pos.x += dx
-
-        self.update_rect()
-
-        for platform in platforms:
-
-            platform_rect = self.get_rect(
-                platform
-            )
-
-            if not self.rect.colliderect(
-                platform_rect
-            ):
-                continue
-
-            if dx > 0:
-
-                self.rect.right = (
-                    platform_rect.left
-                )
-
-            elif dx < 0:
-
-                self.rect.left = (
-                    platform_rect.right
-                )
-
-            self.pos.x = self.rect.centerx
+        self._move_horizontal(
+            dt,
+            platforms
+        )
 
         # =====================================================
-        # ANIMACJA
+        # ANIMACJA RUCHU
         # =====================================================
 
         if abs(self.vel_x) > self.movement_threshold:
 
             if self.walk_anim:
+
                 self.play(
                     self.walk_anim,
                     reset=False
@@ -372,76 +528,57 @@ class Creature(Character):
         else:
 
             if self.idle_anim:
+
                 self.play(
                     self.idle_anim,
                     reset=False
                 )
 
         # =====================================================
-        # GRAWITACJA
+        # RUCH PIONOWY + GRAWITACJA
         # =====================================================
 
-        self.vel_y += (
-            self.gravity * dt
+        self._move_vertical(
+            dt,
+            platforms
         )
 
-        self.pos.y += (
-            self.vel_y * dt
-        )
-
-        self.update_rect()
-
-        # Domyślnie nie stoimy na ziemi.
-        self.is_grounded = False
-
         # =====================================================
-        # KOLIZJE PIONOWE
+        # DODATKOWE SPRAWDZENIE PODŁOŻA
         # =====================================================
 
-        for platform in platforms:
+        if not self.is_grounded:
 
-            platform_rect = self.get_rect(
-                platform
-            )
-
-            if not self.rect.colliderect(
-                platform_rect
-            ):
-                continue
-
-            # Spadanie / lądowanie
-            if self.vel_y >= 0:
-
-                self.rect.bottom = (
-                    platform_rect.top
-                )
-
-                self.pos.y = (
-                    self.rect.centery
-                )
-
-                self.vel_y = 0
+            if self._check_ground(platforms):
 
                 self.is_grounded = True
 
-                self.jumps_left = (
-                    self.max_jumps
-                )
-
-            # Uderzenie głową
-            elif self.vel_y < 0:
-
-                self.rect.top = (
-                    platform_rect.bottom
-                )
-
-                self.pos.y = (
-                    self.rect.centery
-                )
-
                 self.vel_y = 0
 
-            break
+                self.jumps_left = self.max_jumps
+
+                # Dociśnięcie postaci do platformy
+                for platform in platforms:
+
+                    platform_rect = self.get_rect(platform)
+
+                    if (
+                        self.rect.bottom
+                        >= platform_rect.top
+                        and
+                        self.rect.bottom
+                        <= platform_rect.top + 3
+                        and
+                        self.rect.right > platform_rect.left
+                        and
+                        self.rect.left < platform_rect.right
+                    ):
+
+                        self.rect.bottom = platform_rect.top
+
+                        self.pos.y = self.rect.centery
+
+                        break
 
         # =====================================================
         # SPRITE
@@ -480,15 +617,9 @@ class GhostMouse(Character):
         **kwargs
     ):
 
-        # UWAGA:
-        # Duch jest przesuwany przez main.py.
+        # Duch jest sterowany przez main.py.
         #
-        # NIE zmieniamy tutaj last_pos.
-        #
-        # Dzięki temu:
-        #
-        # last_pos = pozycja przed ruchem
-        # pos      = pozycja po ruchu
+        # Nie zmieniamy tutaj jego pozycji.
 
         self.update_rect()
 
@@ -535,8 +666,12 @@ class ShootingEnemy(Character):
 
         self.direction = 1
 
+        # =====================================================
+        # FIZYKA WROGA
+        # =====================================================
+
         self.gravity = 2000
-        self.vel_y = 0
+        self.vel_y = 0.0
 
         self.is_grounded = False
 
@@ -550,13 +685,8 @@ class ShootingEnemy(Character):
         target_y: float
     ):
 
-        dx = (
-            target_x - self.pos.x
-        )
-
-        dy = (
-            target_y - self.pos.y
-        )
+        dx = target_x - self.pos.x
+        dy = target_y - self.pos.y
 
         distance = (
             dx ** 2 + dy ** 2
@@ -572,9 +702,7 @@ class ShootingEnemy(Character):
             dx = 1
             dy = 0
 
-        self.shoot_cooldown = (
-            self.shoot_interval
-        )
+        self.shoot_cooldown = self.shoot_interval
 
         return Projectile(
             self.pos.x,
@@ -621,11 +749,11 @@ class ShootingEnemy(Character):
 
         self.shoot_cooldown -= dt
 
-        dx = 0
-
         # =====================================================
         # RUCH X
         # =====================================================
+
+        dx = 0
 
         if player_pos:
 
@@ -643,9 +771,7 @@ class ShootingEnemy(Character):
                 and dist_to_player > 0
             ):
 
-                direction = (
-                    dist_vec.normalize()
-                )
+                direction = dist_vec.normalize()
 
                 dx = (
                     direction.x
@@ -666,9 +792,7 @@ class ShootingEnemy(Character):
                     * dt
                 )
 
-                self.direction = (
-                    self.move_direction
-                )
+                self.direction = self.move_direction
 
         else:
 
@@ -694,49 +818,47 @@ class ShootingEnemy(Character):
                 else platform
             )
 
-            if self.rect.colliderect(
-                platform_rect
-            ):
+            if self.rect.colliderect(platform_rect):
 
                 if dx > 0:
 
-                    self.rect.right = (
-                        platform_rect.left
-                    )
+                    self.rect.right = platform_rect.left
 
                     self.move_direction = -1
 
                 elif dx < 0:
 
-                    self.rect.left = (
-                        platform_rect.right
-                    )
+                    self.rect.left = platform_rect.right
 
                     self.move_direction = 1
 
-                self.pos.x = (
-                    self.rect.centerx
-                )
+                self.pos.x = self.rect.centerx
 
-        # Granice ekranu
-        if (
-            self.pos.x < 50
-            or self.pos.x > 850
-        ):
+        # =====================================================
+        # GRANICE EKRANU
+        # =====================================================
 
-            self.move_direction *= -1
+        if self.pos.x < 50:
+
+            self.pos.x = 50
+
+            self.move_direction = 1
+
+        elif self.pos.x > 850:
+
+            self.pos.x = 850
+
+            self.move_direction = -1
 
         # =====================================================
         # GRAWITACJA
         # =====================================================
 
-        self.vel_y += (
-            self.gravity * dt
-        )
+        old_rect = self.rect.copy()
 
-        self.pos.y += (
-            self.vel_y * dt
-        )
+        self.vel_y += self.gravity * dt
+
+        self.pos.y += self.vel_y * dt
 
         self.update_rect()
 
@@ -754,32 +876,32 @@ class ShootingEnemy(Character):
                 else platform
             )
 
-            if not self.rect.colliderect(
-                platform_rect
-            ):
+            if not self.rect.colliderect(platform_rect):
                 continue
 
+            # Lądowanie
             if self.vel_y >= 0:
 
-                self.rect.bottom = (
-                    platform_rect.top
-                )
+                if old_rect.bottom <= platform_rect.top:
 
-                self.vel_y = 0
+                    self.rect.bottom = platform_rect.top
 
-                self.is_grounded = True
+                    self.pos.y = self.rect.centery
 
-            elif self.vel_y < 0:
+                    self.vel_y = 0
 
-                self.rect.top = (
-                    platform_rect.bottom
-                )
+                    self.is_grounded = True
 
-                self.vel_y = 0
+            # Uderzenie głową
+            else:
 
-            self.pos.y = (
-                self.rect.centery
-            )
+                if old_rect.top >= platform_rect.bottom:
+
+                    self.rect.top = platform_rect.bottom
+
+                    self.pos.y = self.rect.centery
+
+                    self.vel_y = 0
 
             break
 
@@ -855,9 +977,6 @@ class CharacterManager:
 
             # =================================================
             # DUCH
-            #
-            # Duch jest sterowany przez main.py.
-            # NIE przesuwamy go tutaj.
             # =================================================
 
             if isinstance(
@@ -878,6 +997,21 @@ class CharacterManager:
 
                 character.update(
                     dt,
+                    platforms=platforms
+                )
+
+            # =================================================
+            # WRÓG
+            # =================================================
+
+            elif isinstance(
+                character,
+                ShootingEnemy
+            ):
+
+                character.update(
+                    dt,
+                    player_pos=player_pos,
                     platforms=platforms
                 )
 
@@ -1041,9 +1175,7 @@ class ProjectileManager:
         **kwargs
     ):
 
-        for projectile in (
-            self.projectiles[:]
-        ):
+        for projectile in self.projectiles[:]:
 
             projectile.update(dt)
 
@@ -1065,9 +1197,7 @@ class ProjectileManager:
         surface
     ):
 
-        for projectile in (
-            self.projectiles
-        ):
+        for projectile in self.projectiles:
 
             projectile.draw(surface)
 

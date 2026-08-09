@@ -5,7 +5,6 @@
 p 44 510
 
 platform 177 120 150 30 new_platform
-enemy 510 322 none new_enemy
 lever 800 424 100 20 left new_lever
 door 728 480 30 120 button1 new_door
 door 725 366 30 120 button1 new_door
