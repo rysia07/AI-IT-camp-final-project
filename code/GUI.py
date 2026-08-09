@@ -18,18 +18,60 @@ class Button:
     def draw(self, surface, font):
         color = self.active_color if self.hovered else self.idle_color
 
-        # Wypełnienie z zaokrąglonymi rogami i jasne obramowanie
         pygame.draw.rect(surface, color, self.rect, border_radius=8)
         pygame.draw.rect(surface, (200, 200, 200), self.rect, 2, border_radius=8)
 
-        # Rysowanie tekstu
         text_surf = font.render(self.text, True, (255, 255, 255))
         text_rect = text_surf.get_rect(center=self.rect.center)
         surface.blit(text_surf, text_rect)
 
 
+class Slider:
+    """Klasa interaktywnego suwaka (np. do regulacji głośności)."""
+
+    def __init__(self, x, y, width, height, min_val=0.0, max_val=1.0, initial_val=0.5):
+        self.rect = pygame.Rect(x, y, width, height)
+        self.min_val = min_val
+        self.max_val = max_val
+        self.value = initial_val
+        self.dragging = False
+
+        handle_x = x + int((initial_val - min_val) / (max_val - min_val) * width)
+        self.handle_rect = pygame.Rect(handle_x - 10, y - 5, 20, height + 10)
+
+    def handle_event(self, event):
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            if self.handle_rect.collidepoint(event.pos) or self.rect.collidepoint(event.pos):
+                self.dragging = True
+                self.update_value(event.pos[0])
+        elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+            self.dragging = False
+        elif event.type == pygame.MOUSEMOTION and self.dragging:
+            self.update_value(event.pos[0])
+
+    def update_value(self, mouse_x):
+        rel_x = max(self.rect.left, min(mouse_x, self.rect.right))
+        self.handle_rect.centerx = rel_x
+        ratio = (rel_x - self.rect.left) / self.rect.width
+        self.value = round(self.min_val + ratio * (self.max_val - self.min_val), 2)
+
+    def draw(self, surface, font, label="Głośność"):
+        txt_surf = font.render(f"{label}: {int(self.value * 100)}%", True, (255, 255, 255))
+        surface.blit(txt_surf, (self.rect.x, self.rect.y - 35))
+
+        pygame.draw.rect(surface, (50, 50, 50), self.rect, border_radius=4)
+        fill_width = self.handle_rect.centerx - self.rect.left
+        fill_rect = pygame.Rect(self.rect.left, self.rect.top, fill_width, self.rect.height)
+        pygame.draw.rect(surface, (100, 180, 255), fill_rect, border_radius=4)
+        pygame.draw.rect(surface, (200, 200, 200), self.rect, 2, border_radius=4)
+
+        color = (220, 220, 220) if self.dragging else (170, 170, 170)
+        pygame.draw.rect(surface, color, self.handle_rect, border_radius=6)
+        pygame.draw.rect(surface, (255, 255, 255), self.handle_rect, 2, border_radius=6)
+
+
 class BaseMenu:
-    """Bazowa klasa pomocnicza dla wspólnego wyglądu menu."""
+    """Bazowa klasa dla wszystkich menu."""
 
     def __init__(self, width, height, title_text):
         self.width = width
@@ -37,6 +79,7 @@ class BaseMenu:
         self.title_text = title_text
         self.title_font = pygame.font.Font(None, 64)
         self.btn_font = pygame.font.Font(None, 36)
+        self.info_font = pygame.font.Font(None, 28)
         self.buttons = []
 
     def handle_input(self, pos, mouse_buttons=None):
@@ -56,7 +99,7 @@ class BaseMenu:
         surface.blit(overlay, (0, 0))
 
         title_surf = self.title_font.render(self.title_text, True, (255, 255, 255))
-        title_rect = title_surf.get_rect(center=(self.width // 2, 120))
+        title_rect = title_surf.get_rect(center=(self.width // 2, 80))
         surface.blit(title_surf, title_rect)
 
     def draw(self, surface):
@@ -70,8 +113,8 @@ class MainMenu(BaseMenu):
         super().__init__(width, height, "ALIEN SPACE")
         btn_w, btn_h = 200, 50
         center_x = width // 2 - btn_w // 2
-        start_y = 200
-        spacing = 70
+        start_y = 180
+        spacing = 65
 
         self.buttons = [
             Button(center_x, start_y, btn_w, btn_h, "Graj", "play"),
@@ -80,7 +123,6 @@ class MainMenu(BaseMenu):
             Button(center_x, start_y + spacing * 3, btn_w, btn_h, "Wyjście", "quit")
         ]
 
-    # Kompatybilność z poprzednim kodem w main.py
     def handle_click(self, pos, mouse_buttons=None):
         return self.handle_input(pos, mouse_buttons)
 
@@ -91,9 +133,42 @@ class OptionsMenu(BaseMenu):
         btn_w, btn_h = 200, 50
         center_x = width // 2 - btn_w // 2
 
-        self.buttons = [
-            Button(center_x, 400, btn_w, btn_h, "Powrót", "back")
+        # Suwak głośności
+        slider_w, slider_h = 300, 16
+        slider_x = width // 2 - slider_w // 2
+        self.volume_slider = Slider(slider_x, 200, slider_w, slider_h, initial_val=0.7)
+
+        # Informacje o sterowaniu
+        self.controls_info = [
+            "--- STEROWANIE ---",
+            "A / D  lub  Strzałki:  Ruch w lewo / prawo",
+            "W / Spacja:  Skok",
+            "S / Strzałka w dół:  Szybkie opadanie",
+            "Klawisz 2:  Atak postaci",
+            "Ruch myszą:  Ruch Duchem (Ghost)",
+            "ESC:  Pauza"
         ]
+
+        self.buttons = [
+            Button(center_x, 480, btn_w, btn_h, "Powrót", "back")
+        ]
+
+    def handle_event(self, event):
+        self.volume_slider.handle_event(event)
+
+    def draw(self, surface):
+        super().draw(surface)
+
+        # Rysowanie suwaka głośności
+        self.volume_slider.draw(surface, self.btn_font)
+
+        # Rysowanie sekcji Sterowanie
+        start_y = 260
+        for i, line in enumerate(self.controls_info):
+            color = (255, 215, 0) if i == 0 else (220, 220, 220)
+            txt_surf = self.info_font.render(line, True, color)
+            txt_rect = txt_surf.get_rect(center=(self.width // 2, start_y + i * 28))
+            surface.blit(txt_surf, txt_rect)
 
 
 class CreditsMenu(BaseMenu):
@@ -102,9 +177,28 @@ class CreditsMenu(BaseMenu):
         btn_w, btn_h = 200, 50
         center_x = width // 2 - btn_w // 2
 
-        self.buttons = [
-            Button(center_x, 400, btn_w, btn_h, "Powrót", "back")
+        self.credits_lines = [
+            "Gra stworzona w ramach AI & IT Camp",
+            "",
+            "Programowanie i Projekt:",
+            "• Twój Zespół / Autorzy",
+            "",
+            "Grafika i Animacje: Pygame / Zasoby własne",
+            "Dziękujemy za grę!"
         ]
+
+        self.buttons = [
+            Button(center_x, 480, btn_w, btn_h, "Powrót", "back")
+        ]
+
+    def draw(self, surface):
+        super().draw(surface)
+
+        start_y = 180
+        for i, line in enumerate(self.credits_lines):
+            txt_surf = self.info_font.render(line, True, (220, 220, 220))
+            txt_rect = txt_surf.get_rect(center=(self.width // 2, start_y + i * 32))
+            surface.blit(txt_surf, txt_rect)
 
 
 class FailureMenu(BaseMenu):
@@ -112,7 +206,7 @@ class FailureMenu(BaseMenu):
         super().__init__(width, height, "PORAŻKA")
         btn_w, btn_h = 200, 50
         center_x = width // 2 - btn_w // 2
-        start_y = 250
+        start_y = 220
         spacing = 70
 
         self.buttons = [
@@ -126,7 +220,7 @@ class VictoryMenu(BaseMenu):
         super().__init__(width, height, "ZWYCIĘSTWO!")
         btn_w, btn_h = 200, 50
         center_x = width // 2 - btn_w // 2
-        start_y = 250
+        start_y = 220
         spacing = 70
 
         self.buttons = [
