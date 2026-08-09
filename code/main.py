@@ -36,6 +36,13 @@ FPS = 60
 WIDTH = 900
 HEIGHT = 600
 
+player = Creature(
+    450,
+    300,
+    speed=400,
+    jump_force=-700,
+    spritesheet_path="../pictures/ludzik.png"
+)
 
 # =========================================================
 # STANY GRY
@@ -54,13 +61,14 @@ LEVEL_SELECT = 7
 # =========================================================
 # PLAYER
 # =========================================================
-
 def create_player(start_pos):
 
     player = Creature(
         start_pos[0],
         start_pos[1],
-        "../pictures/ludzik.png"
+        speed=400,
+        jump_force=-700,
+        spritesheet_path="../pictures/ludzik.png"
     )
 
     try:

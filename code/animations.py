@@ -1,7 +1,7 @@
 import pygame
 from dataclasses import dataclass
 from typing import List, Optional, Dict, Tuple
-
+okno = pygame.display.set_mode((800, 600))  # Example window size
 
 # =========================================================
 # FRAME
