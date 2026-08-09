@@ -143,8 +143,12 @@ def main():
             if event.type == pygame.QUIT:
                 running = False
 
+            # Przekazywanie zdarzeń do Suwaka w Opcjach (przeciąganie / klikanie)
+            if current_state == OPTIONS:
+                options_menu.handle_event(event)
+
             # Naciśnięcie klawisza (KEYDOWN)
-            elif event.type == pygame.KEYDOWN:
+            if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     if current_state == PLAYING:
                         current_state = PAUSE
@@ -242,7 +246,7 @@ def main():
                         current_state = MENU
 
         # ----------------------------------------------------
-        # 2. AKTUALIZACJA LOGIKI (UPDATE) - WYCIĄGNIĘTA POZA PĘTLĘ FOR!
+        # 2. AKTUALIZACJA LOGIKI (UPDATE)
         # ----------------------------------------------------
         if current_state == MENU:
             main_menu.update()
