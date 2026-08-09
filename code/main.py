@@ -13,8 +13,10 @@ from Characters import (
     ProjectileManager
 )
 
-from Interactive import CodePanel
-
+from Interactive import (
+    CodePanel,
+    ScoringButton
+)
 from GUI import (
     MainMenu,
     LevelSelectMenu,
@@ -892,29 +894,21 @@ def main():
             )
 
             solid_interactive = [
-
                 obj
-
                 for obj in interactive_objs
-
                 if (
-                    hasattr(
-                        obj,
-                        "is_open"
-                    )
-
-                    and not obj.is_open
-
-                    and not isinstance(
-                        obj,
-                        CodePanel
-                    )
+                        (
+                                hasattr(obj, "is_open")
+                                and not obj.is_open
+                                and not isinstance(obj, CodePanel)
+                        )
+                        or isinstance(obj, ScoringButton)
                 )
             ]
 
             all_obstacles = (
-                platform_mgr.platforms
-                + solid_interactive
+                    platform_mgr.platforms
+                    + solid_interactive
             )
 
             # =================================================
