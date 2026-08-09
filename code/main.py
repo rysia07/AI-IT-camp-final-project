@@ -9,6 +9,7 @@ from Characters import (
     CharacterManager,
     ProjectileManager
 )
+from Interactive import CodePanel
 from GUI import (
     MainMenu,
     OptionsMenu,
@@ -16,6 +17,47 @@ from GUI import (
     FailureMenu,
     VictoryMenu
 )
+
+# =========================================================
+# KLASA PAUSE MENU
+# =========================================================
+class PauseMenu:
+    def __init__(self, width, height):
+        self.width = width
+        self.height = height
+        self.font = pygame.font.Font(None, 48)
+        self.btn_font = pygame.font.Font(None, 36)
+        self.resume_btn = pygame.Rect(width // 2 - 100, 200, 200, 50)
+        self.options_btn = pygame.Rect(width // 2 - 100, 270, 200, 50)
+        self.main_menu_btn = pygame.Rect(width // 2 - 100, 340, 200, 50)
+
+    def draw(self, surface):
+        overlay = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 180))
+        surface.blit(overlay, (0, 0))
+
+        title = self.font.render("PAUZA", True, (255, 255, 255))
+        surface.blit(title, (self.width // 2 - title.get_width() // 2, 120))
+
+        for rect, text in [
+            (self.resume_btn, "Wznów"),
+            (self.options_btn, "Opcje"),
+            (self.main_menu_btn, "Główne Menu")
+        ]:
+            pygame.draw.rect(surface, (70, 70, 70), rect, border_radius=8)
+            pygame.draw.rect(surface, (200, 200, 200), rect, 2, border_radius=8)
+            txt_surf = self.btn_font.render(text, True, (255, 255, 255))
+            surface.blit(txt_surf, (rect.centerx - txt_surf.get_width() // 2, rect.centery - txt_surf.get_height() // 2))
+
+    def handle_input(self, pos):
+        if self.resume_btn.collidepoint(pos):
+            return "resume"
+        if self.options_btn.collidepoint(pos):
+            return "options"
+        if self.main_menu_btn.collidepoint(pos):
+            return "main_menu"
+        return None
+
 
 # =========================================================
 # KONFIGURACJA I STAŁE
@@ -29,6 +71,7 @@ OPTIONS = 2
 CREDITS = 3
 FAILURE = 4
 VICTORY = 5
+PAUSE = 6
 
 
 def create_player(start_pos):
@@ -54,9 +97,44 @@ def reset_game(player, ghost, spawn_pos):
     player.pos.y = spawn_pos[1]
     player.vel_y = 0
     ghost.hp = 50
-    ghost.pos.x = 0
-    ghost.pos.y = 0
+    ghost.pos.x = spawn_pos[0]
+    ghost.pos.y = spawn_pos[1]
 
+
+def move_ghost_with_collisions(ghost, dx, dy, platforms):
+    """Przesuwa ducha z precyzyjną kolizją w osiach X i Y."""
+
+    # 1. Tworzymy tymczasowy Rect na podstawie aktualnej pozycji ducha
+    width = getattr(ghost, 'width', 32)
+    height = getattr(ghost, 'height', 32)
+    ghost_rect = pygame.Rect(int(ghost.pos.x), int(ghost.pos.y), width, height)
+
+    # --- 2. RUCH W OSI X (Lewo / Prawo) ---
+    ghost_rect.x += int(dx)
+    for p in platforms:
+        plat_rect = p.rect if hasattr(p, 'rect') else pygame.Rect(p[0], p[1], p[2], p[3])
+        if ghost_rect.colliderect(plat_rect):
+            if dx > 0:  # Idziemy w prawo -> zatrzymaj na lewej krawędzi ściany
+                ghost_rect.right = plat_rect.left
+            elif dx < 0:  # Idziemy w lewo -> zatrzymaj na prawej krawędzi ściany
+                ghost_rect.left = plat_rect.right
+
+    # --- 3. RUCH W OSI Y (Góra / Dół) ---
+    ghost_rect.y += int(dy)
+    for p in platforms:
+        plat_rect = p.rect if hasattr(p, 'rect') else pygame.Rect(p[0], p[1], p[2], p[3])
+        if ghost_rect.colliderect(plat_rect):
+            if dy > 0:  # Idziemy w DÓŁ -> zatrzymaj na GÓRZE platformy
+                ghost_rect.bottom = plat_rect.top
+            elif dy < 0:  # Idziemy w GÓRĘ -> zatrzymaj na DOLE platformy
+                ghost_rect.top = plat_rect.bottom
+
+    # --- 4. OSTATECZNA AKTUALIZACJA POSITION ---
+    ghost.pos.x = float(ghost_rect.x)
+    ghost.pos.y = float(ghost_rect.y)
+
+    if hasattr(ghost, 'rect') and ghost.rect:
+        ghost.rect.topleft = (ghost_rect.x, ghost_rect.y)
 
 def main():
     pygame.init()
@@ -72,7 +150,7 @@ def main():
 
     # --- POSTACIE ---
     player = create_player(level.player_pos)
-    ghost = GhostMouse(0, 0)
+    ghost = GhostMouse(level.player_pos[0], level.player_pos[1])
 
     char_mgr = CharacterManager()
     char_mgr.add("player", player)
@@ -84,15 +162,22 @@ def main():
     credits_menu = CreditsMenu(WIDTH, HEIGHT)
     failure_menu = FailureMenu(WIDTH, HEIGHT)
     victory_menu = VictoryMenu(WIDTH, HEIGHT)
+    pause_menu = PauseMenu(WIDTH, HEIGHT)
 
     current_state = MENU
+    previous_state = MENU
     running = True
+
+    pygame.mouse.get_rel()
 
     # =========================================================
     # PĘTLA GŁÓWNA
     # =========================================================
     while running:
         dt = clock.tick(FPS) / 1000.0
+
+        # Zmienne przechowujące ruch myszy w danej klatce
+        mouse_dx, mouse_dy = 0, 0
 
         # ----------------------------------------------------
         # 1. OBSŁUGA ZDARZEŃ (EVENTS)
@@ -103,8 +188,15 @@ def main():
 
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
-                    current_state = MENU
-                    pygame.mouse.set_visible(True)
+                    if current_state == PLAYING:
+                        current_state = PAUSE
+                        pygame.mouse.set_visible(True)
+                        pygame.event.set_grab(False)
+                    elif current_state == PAUSE:
+                        current_state = PLAYING
+                        pygame.mouse.set_visible(False)
+                        pygame.event.set_grab(True)
+                        pygame.mouse.get_rel()
 
                 if current_state == PLAYING:
                     if event.key == pygame.K_w:
@@ -114,27 +206,47 @@ def main():
 
             if current_state == PLAYING:
                 interactive_mgr.handle_event_all(event)
-                pygame.event.set_grab(True)
+
+                # Zamiast od razu przesuwać ducha, zliczamy przesunięcie
+                if event.type == pygame.MOUSEMOTION:
+                    dx, dy = event.rel
+                    mouse_dx += dx
+                    mouse_dy += dy
 
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                # Obsługa menu (używamy dokładnych metod z Twojego GUI.py)
                 if current_state == MENU:
                     action = main_menu.handle_click(event.pos, (1, 0, 0))
                     if action == "play":
                         reset_game(player, ghost, level.player_pos)
                         pygame.mouse.set_visible(False)
+                        pygame.event.set_grab(True)
+                        pygame.mouse.get_rel()
                         current_state = PLAYING
                     elif action == "options":
+                        previous_state = MENU
                         current_state = OPTIONS
                     elif action == "credits":
                         current_state = CREDITS
                     elif action == "quit":
                         running = False
 
+                elif current_state == PAUSE:
+                    action = pause_menu.handle_input(event.pos)
+                    if action == "resume":
+                        pygame.mouse.set_visible(False)
+                        pygame.event.set_grab(True)
+                        pygame.mouse.get_rel()
+                        current_state = PLAYING
+                    elif action == "options":
+                        previous_state = PAUSE
+                        current_state = OPTIONS
+                    elif action == "main_menu":
+                        current_state = MENU
+
                 elif current_state == OPTIONS:
                     action = options_menu.handle_input(event.pos, (1, 0, 0))
                     if action == "back":
-                        current_state = MENU
+                        current_state = previous_state
 
                 elif current_state == CREDITS:
                     action = credits_menu.handle_input(event.pos, (1, 0, 0))
@@ -146,6 +258,8 @@ def main():
                     if action == "retry":
                         reset_game(player, ghost, level.player_pos)
                         pygame.mouse.set_visible(False)
+                        pygame.event.set_grab(True)
+                        pygame.mouse.get_rel()
                         current_state = PLAYING
                     elif action == "menu":
                         current_state = MENU
@@ -155,6 +269,8 @@ def main():
                     if action == "next":
                         reset_game(player, ghost, level.player_pos)
                         pygame.mouse.set_visible(False)
+                        pygame.event.set_grab(True)
+                        pygame.mouse.get_rel()
                         current_state = PLAYING
                     elif action == "menu":
                         current_state = MENU
@@ -165,9 +281,13 @@ def main():
         if current_state == PLAYING:
             solid_interactive = [
                 obj for obj in interactive_mgr.objects
-                if hasattr(obj, 'is_open') and not obj.is_open
+                if hasattr(obj, 'is_open') and not obj.is_open and not isinstance(obj, CodePanel)
             ]
             all_obstacles = platform_mgr.platforms + solid_interactive
+
+            # --- RUCH DUCHA Z KOLIZJAMI ---
+            if mouse_dx != 0 or mouse_dy != 0:
+                move_ghost_with_collisions(ghost, mouse_dx, mouse_dy, all_obstacles)
 
             char_mgr.update_all(dt, platforms=all_obstacles)
 
@@ -185,18 +305,7 @@ def main():
         # ----------------------------------------------------
         screen.fill((30, 30, 30))
 
-        if current_state == MENU:
-            main_menu.draw(screen)
-            pygame.event.set_grab(False)
-        elif current_state == OPTIONS:
-            options_menu.draw(screen)
-        elif current_state == CREDITS:
-            credits_menu.draw(screen)
-        elif current_state == FAILURE:
-            failure_menu.draw(screen)
-        elif current_state == VICTORY:
-            victory_menu.draw(screen)
-        elif current_state == PLAYING:
+        if current_state in (PLAYING, PAUSE):
             platform_mgr.draw(screen)
             interactive_mgr.draw_all(screen)
             char_mgr.draw_all(screen)
@@ -205,7 +314,6 @@ def main():
                 enemy.draw(screen)
             projectile_mgr.draw_all(screen)
 
-            # HUD
             font = pygame.font.Font(None, 32)
             hud_text = font.render(
                 f"Player HP: {player.hp} | Ghost HP: {ghost.hp} | Power: {player.power}",
@@ -214,10 +322,24 @@ def main():
             screen.blit(hud_text, (10, 10))
 
             info = font.render(
-                "A/D = Move, W = Jump, S = Fast Fall, 2 = Attack, ESC = Menu",
+                "A/D = Move, W = Jump, S = Fast Fall, 2 = Attack, ESC = Pause",
                 True, (200, 200, 200)
             )
             screen.blit(info, (10, 50))
+
+            if current_state == PAUSE:
+                pause_menu.draw(screen)
+
+        elif current_state == MENU:
+            main_menu.draw(screen)
+        elif current_state == OPTIONS:
+            options_menu.draw(screen)
+        elif current_state == CREDITS:
+            credits_menu.draw(screen)
+        elif current_state == FAILURE:
+            failure_menu.draw(screen)
+        elif current_state == VICTORY:
+            victory_menu.draw(screen)
 
         pygame.display.flip()
 
