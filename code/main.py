@@ -35,6 +35,8 @@ pygame.mouse.set_visible(True)
 # =========================================================
 
 level = load_level("../levels/level.txt")
+interactive_manager = level.interactive_manager
+
 
 platform_mgr = PlatformManager(
     "../pictures/platforma.png",
@@ -99,16 +101,7 @@ manager.add("ghost", ghost)
 # INTERAKTYWNE OBIEKTY
 # =========================================================
 
-interactive_manager = InteractiveManager()
 
-lever = Lever(300, 300, 100, 20, "left")
-door = Door(700, 250, 30, 120, trigger_object=lever)
-
-interactive_manager.add(lever)
-interactive_manager.add(door)
-interactive_manager.add(CodePanel(700, 300, code="1234"))
-interactive_manager.add(ScoringButton(490, 490, required_power=3))
-interactive_manager.add(LevelGate(800, 400))
 
 # =========================================================
 # STANY GRY I MENU
@@ -229,7 +222,7 @@ while running:
 
     if current_state == PLAYING:
         manager.update_all(dt, platform_mgr.platforms)
-        interactive_manager.update_all(player, ghost)
+        interactive_manager.update_all(player, ghost, dt)
         pygame.event.set_grab(True)
 
         # Warunki zakończenia rozgrywki:

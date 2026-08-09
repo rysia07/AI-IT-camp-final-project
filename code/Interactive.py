@@ -357,9 +357,13 @@ class LevelGate(Interactive):
         if self.triggered:
             return
 
-        if creature.rect.colliderect(self.rect) and ghost.rect.colliderect(self.rect):
+        if (
+            creature.rect.colliderect(self.rect)
+            and ghost.rect.colliderect(self.rect)
+        ):
             print("NEXT LEVEL")
             self.triggered = True
+
 
 
 class InteractiveManager:

@@ -167,9 +167,14 @@ class Character:
 # =========================================================
 # CREATURE
 # =========================================================
+# =========================================================
+# CREATURE
+# =========================================================
+
 class Creature(Character):
+
     def __init__(self, x, y, spritesheet_path=None):
-        # Dziedziczymy po klasie Character (rozmiar np. 50 px)
+
         super().__init__(
             x=x,
             y=y,
@@ -178,57 +183,186 @@ class Creature(Character):
         )
 
         self.vel_y = 0
+
         self.hp = 100
         self.power = 0
 
-        # Wyznaczenie domyślnych nazw animacji
+        # =========================
+        # MOVEMENT
+        # =========================
+
+        self.speed = 400
+
+        # =========================
+        # JUMP
+        # =========================
+
+        self.max_jumps = 2
+        self.jumps_left = self.max_jumps
+
+        self.is_grounded = False
+
+        self.jump_speed = 400
+
+        # =========================
+        # ANIMATIONS
+        # =========================
+
         self.walk_anim = "walk"
         self.idle_anim = "idle"
 
-        # --- USTAWIENIA SKOKU ---
-        self.max_jumps = 2  # Double Jump
-        self.jumps_left = self.max_jumps
-        self.is_grounded = False
-        self.jump_speed = 400  # Zwiększono siłę skoku dla kompatybilności z dt
+    # =====================================================
+    # JUMP
+    # =====================================================
 
     def jump(self):
-        """Ta funkcja wykonuje się DOKŁADNIE raz na wciśnięcie W"""
+
         if self.jumps_left > 0:
-            self.vel_y = -self.jump_speed  # Nadajemy prędkość w górę
-            self.jumps_left -= 1  # Odejmujemy jeden dostępny skok
-            self.is_grounded = False  # Od razu odrywamy się od ziemi!
+
+            # Move upward
+            self.vel_y = -self.jump_speed
+
+            self.jumps_left -= 1
+
+            self.is_grounded = False
+
+    # =====================================================
+    # UPDATE
+    # =====================================================
 
     def update(self, dt, platforms=None):
-        # 1. Aplikujemy grawitację
-        gravity = 1200
-        self.vel_y += gravity * dt
-        self.pos.y += self.vel_y * dt
 
-        # Aktualizacja hitboksu przed sprawdzaniem kolizji
+        keys = pygame.key.get_pressed()
+
+        # =================================================
+        # HORIZONTAL MOVEMENT
+        # =================================================
+
+        dx = 0
+
+        if keys[pygame.K_a]:
+            dx -= self.speed * dt
+
+        if keys[pygame.K_d]:
+            dx += self.speed * dt
+
+        # Move player
+        self.pos.x += dx
+
+        # Update hitbox
         self.update_rect()
 
-        # 2. Sprawdzamy kolizję z podłożem
+        # =================================================
+        # HORIZONTAL COLLISIONS
+        # =================================================
+
+        if platforms:
+
+            for platform in platforms:
+
+                plat_rect = (
+                    platform.rect
+                    if hasattr(platform, "rect")
+                    else platform
+                )
+
+                if self.rect.colliderect(plat_rect):
+
+                    if dx > 0:
+                        # Moving right
+                        self.rect.right = plat_rect.left
+
+                    elif dx < 0:
+                        # Moving left
+                        self.rect.left = plat_rect.right
+
+                    self.pos.x = self.rect.centerx
+
+        # =================================================
+        # ANIMATION
+        # =================================================
+
+        if dx != 0:
+
+            if self.walk_anim:
+                self.play(
+                    self.walk_anim,
+                    reset=False
+                )
+
+        else:
+
+            if self.idle_anim:
+                self.play(
+                    self.idle_anim,
+                    reset=False
+                )
+
+        # =================================================
+        # GRAVITY
+        # =================================================
+
+        gravity = 1200
+
+        self.vel_y += gravity * dt
+
+        self.pos.y += self.vel_y * dt
+
+        self.update_rect()
+
+        # =================================================
+        # VERTICAL COLLISIONS
+        # =================================================
+
         self.is_grounded = False
 
         if platforms:
+
             for platform in platforms:
-                # Dostęp do prostokąta platformy (w zależności czy obiekt to Rect czy posiada .rect)
-                plat_rect = platform.rect if hasattr(platform, 'rect') else platform
+
+                plat_rect = (
+                    platform.rect
+                    if hasattr(platform, "rect")
+                    else platform
+                )
 
                 if self.rect.colliderect(plat_rect):
-                    # Kluczowe: Reagujemy TYLKO wtedy, gdy spadamy na platformę (vel_y >= 0)
-                    if self.vel_y >= 0:
+
+                    # -----------------------------
+                    # FALLING / LANDING
+                    # -----------------------------
+
+                    if self.vel_y > 0:
+
                         self.rect.bottom = plat_rect.top
+
                         self.pos.y = self.rect.centery
+
                         self.vel_y = 0
+
                         self.is_grounded = True
-                        break
 
-        # 3. RESET SKOKÓW: Tylko w momencie, gdy wylądujemy na ziemi!
-        if self.is_grounded:
-            self.jumps_left = self.max_jumps
+                        # Reset double jump
+                        self.jumps_left = self.max_jumps
 
-        # 4. Aktualizacja animacji i pozycji duszka z klasy Character
+                    # -----------------------------
+                    # HITTING CEILING
+                    # -----------------------------
+
+                    elif self.vel_y < 0:
+
+                        self.rect.top = plat_rect.bottom
+
+                        self.pos.y = self.rect.centery
+
+                        self.vel_y = 0
+
+                    break
+
+        # =================================================
+        # CHARACTER / SPRITE UPDATE
+        # =================================================
+
         super().update(dt)
 
 # =========================================================
