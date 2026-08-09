@@ -13,5 +13,5 @@ platform 197 333 100 30 new_platform
 platform 505 330 100 30 new_platform
 platform 663 244 100 30 new_platform
 platform 800 137 100 30 new_platform
-enemy 43 252 none new_enemy
+
 scoringbutton 0 256 0 new_button
