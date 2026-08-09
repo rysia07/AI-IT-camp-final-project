@@ -75,9 +75,13 @@ def reset_game(player, ghost, spawn_pos):
 
 def move_ghost_with_collisions(ghost, dx, dy, platforms):
     """Przesuwa ducha z precyzyjną kolizją w osiach X i Y."""
-    width = getattr(ghost, 'width', 32)
-    height = getattr(ghost, 'height', 32)
-    ghost_rect = pygame.Rect(int(ghost.pos.x), int(ghost.pos.y), width, height)
+    # Użyj istniejącego rect zamiast tworzyć nowy
+    if not hasattr(ghost, 'rect') or ghost.rect is None:
+        width = getattr(ghost, 'width', getattr(ghost, 'size', 32))
+        height = getattr(ghost, 'height', getattr(ghost, 'size', 32))
+        ghost.rect = pygame.Rect(int(ghost.pos.x), int(ghost.pos.y), width, height)
+
+    ghost_rect = ghost.rect.copy()
 
     ghost_rect.x += int(dx)
     for p in platforms:
@@ -101,9 +105,7 @@ def move_ghost_with_collisions(ghost, dx, dy, platforms):
 
     ghost.pos.x = float(ghost_rect.x)
     ghost.pos.y = float(ghost_rect.y)
-
-    if hasattr(ghost, 'rect') and ghost.rect:
-        ghost.rect.topleft = (ghost_rect.x, ghost_rect.y)
+    ghost.rect.topleft = (ghost_rect.x, ghost_rect.y)
 
 
 def load_selected_level(level_filename):
@@ -343,8 +345,8 @@ def main():
             elif hasattr(char_mgr, 'update'):
                 char_mgr.update(dt, platforms=all_obstacles)
             else:
-                player.update(dt, platforms=platform_mgr)
-                ghost.update(dt, platforms=platform_mgr)
+                player.update(dt, platforms=all_obstacles)
+                ghost.update(dt, platforms=all_obstacles)
 
             # Aktualizacja wrogów i ich strzelanie
             for enemy in level.enemies:
