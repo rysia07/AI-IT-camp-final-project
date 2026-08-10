@@ -42,6 +42,16 @@ class GameUpdate:
         obstacles
     ):
 
+        if dx >= 25:
+            dx = 25
+        if dy >= 25:
+            dy = 25
+
+        if dx <= -25:
+            dx = -25
+        if dy <= -25:
+            dy = -25
+
         ghost_rect = (
             ghost.rect.copy()
         )

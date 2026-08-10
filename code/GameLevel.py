@@ -375,7 +375,7 @@ class GameLevel:
         # -------------------------------------------------
 
         mouse_x, mouse_y = (
-            pygame.mouse.get_pos()
+            level.player_pos
         )
 
         game.ghost = GhostMouse(
