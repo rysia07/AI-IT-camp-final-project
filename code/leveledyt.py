@@ -1,3 +1,5 @@
+from sys import platform
+
 import pygame
 import sys
 import os
@@ -84,6 +86,7 @@ GATE_COLOR = (70, 220, 180)
 
 OBJECT_TYPES = [
     "platform",
+    "wall",
     "enemy",
     "lever",
     "door",
@@ -92,6 +95,7 @@ OBJECT_TYPES = [
     "levelgate",
     "player",
 ]
+
 
 
 # ============================================================
@@ -147,6 +151,7 @@ class LevelObject:
         colors = {
 
             "platform": PLATFORM_COLOR,
+            "wall": PLATFORM_COLOR,
             "player": PLAYER_COLOR,
             "enemy": ENEMY_COLOR,
             "lever": LEVER_COLOR,
@@ -689,6 +694,20 @@ class LevelEditor:
                             line += f" {obj.name}"
 
                         file.write(line + "\n")
+                    elif obj.type == "wall":
+
+                        line = (
+                            f"wall "
+                            f"{self.clean(obj.x)} "
+                            f"{self.clean(obj.y)} "
+                            f"{self.clean(obj.width)} "
+                            f"{self.clean(obj.height)}"
+                        )
+
+                        if obj.name:
+                            line += f" {obj.name}"
+
+                        file.write(line + "\n")
 
                     elif obj.type == "lever":
 
@@ -980,6 +999,16 @@ class LevelEditor:
                 150,
                 30,
                 "new_platform"
+            )
+        elif object_type == "wall":
+
+            obj = LevelObject(
+                "wall",
+                x,
+                y,
+                30,
+                150,
+                "new_wall"
             )
 
         elif object_type == "enemy":

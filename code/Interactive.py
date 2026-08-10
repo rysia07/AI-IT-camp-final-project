@@ -78,6 +78,10 @@ class Interactive:
             scale=scale
         )
 
+    # =====================================================
+    # PLAY
+    # =====================================================
+
     def play(
         self,
         name,
@@ -100,6 +104,10 @@ class Interactive:
 
         return True
 
+    # =====================================================
+    # UPDATE ANIMATION
+    # =====================================================
+
     def update_animation(
         self,
         dt
@@ -108,12 +116,18 @@ class Interactive:
         if self.sprite is None:
             return
 
-        self.sprite.update(dt)
+        self.sprite.update(
+            dt
+        )
 
         self.sprite.set_position(
             self.rect.centerx,
             self.rect.centery
         )
+
+    # =====================================================
+    # UPDATE
+    # =====================================================
 
     def update(
         self,
@@ -124,7 +138,13 @@ class Interactive:
         **kwargs
     ):
 
-        self.update_animation(dt)
+        self.update_animation(
+            dt
+        )
+
+    # =====================================================
+    # EVENT
+    # =====================================================
 
     def handle_event(
         self,
@@ -132,6 +152,10 @@ class Interactive:
     ):
 
         pass
+
+    # =====================================================
+    # DRAW
+    # =====================================================
 
     def draw(
         self,
@@ -143,7 +167,9 @@ class Interactive:
             and self.sprite.current
         ):
 
-            self.sprite.draw(surface)
+            self.sprite.draw(
+                surface
+            )
 
         else:
 
@@ -216,7 +242,7 @@ class Lever(Interactive):
         new_rect = ghost.rect.copy()
 
         # =================================================
-        # LEWO / PRAWO
+        # LEFT / RIGHT
         # =================================================
 
         if self.direction in (
@@ -238,7 +264,6 @@ class Lever(Interactive):
 
                 return
 
-            # Duch wszedł z lewej
             if (
                 old_rect.right <= self.rect.left
                 and new_rect.right > self.rect.left
@@ -246,7 +271,6 @@ class Lever(Interactive):
 
                 self.enter_side = "left"
 
-            # Duch wszedł z prawej
             elif (
                 old_rect.left >= self.rect.right
                 and new_rect.left < self.rect.right
@@ -254,7 +278,6 @@ class Lever(Interactive):
 
                 self.enter_side = "right"
 
-            # Wszedł z lewej i wyszedł prawą
             if (
                 self.enter_side == "left"
                 and new_rect.left >= self.rect.right
@@ -266,7 +289,6 @@ class Lever(Interactive):
 
                 self.enter_side = None
 
-            # Wszedł z prawej i wyszedł lewą
             elif (
                 self.enter_side == "right"
                 and new_rect.right <= self.rect.left
@@ -279,7 +301,7 @@ class Lever(Interactive):
                 self.enter_side = None
 
         # =================================================
-        # GÓRA / DÓŁ
+        # TOP / BOTTOM
         # =================================================
 
         elif self.direction in (
@@ -301,7 +323,6 @@ class Lever(Interactive):
 
                 return
 
-            # Duch wszedł od góry
             if (
                 old_rect.bottom <= self.rect.top
                 and new_rect.bottom > self.rect.top
@@ -309,7 +330,6 @@ class Lever(Interactive):
 
                 self.enter_side = "top"
 
-            # Duch wszedł od dołu
             elif (
                 old_rect.top >= self.rect.bottom
                 and new_rect.top < self.rect.bottom
@@ -317,7 +337,6 @@ class Lever(Interactive):
 
                 self.enter_side = "bottom"
 
-            # Góra -> dół
             if (
                 self.enter_side == "top"
                 and new_rect.top >= self.rect.bottom
@@ -329,7 +348,6 @@ class Lever(Interactive):
 
                 self.enter_side = None
 
-            # Dół -> góra
             elif (
                 self.enter_side == "bottom"
                 and new_rect.bottom <= self.rect.top
@@ -340,6 +358,10 @@ class Lever(Interactive):
                 )
 
                 self.enter_side = None
+
+    # =====================================================
+    # DRAW
+    # =====================================================
 
     def draw(
         self,
@@ -358,18 +380,33 @@ class Lever(Interactive):
 
 
 # =========================================================
-# CODE PANEL
+# CODE PANEL / PLAYER BUTTON
 # =========================================================
 
 class CodePanel(Interactive):
+
+    """
+    Stary typ 'CodePanel' zostaje zachowany, aby stare
+    pliki leveli nadal działały.
+
+    NOWE DZIAŁANIE:
+
+        codepanel 100 100 1234 nazwa
+
+    Gracz podchodzi do przycisku i naciska E.
+
+    Parametr '1234' jest ignorowany jako kod.
+    Zostaje tylko dla kompatybilności ze starą składnią leveli.
+    """
 
     def __init__(
         self,
         x,
         y,
+        code="1234",
+        name=None,
         width=50,
-        height=50,
-        code="1234"
+        height=50
     ):
 
         super().__init__(
@@ -379,22 +416,50 @@ class CodePanel(Interactive):
             height
         )
 
+        # Zachowujemy parametr code,
+        # żeby nie psuć starego API.
+
         self.code = str(code)
+
+        self.name = name
+
+        # Stan przycisku
 
         self.triggered = False
         self.is_unlocked = False
 
-        self.input_active = False
-        self.entered_code = ""
-
-        self.message = ""
+        # Odległość, z której gracz może nacisnąć E
 
         self.interaction_distance = 80
 
+        # Kolory
+
         self.color = (
-            100,
-            100,
-            100
+            231,
+            76,
+            60
+        )
+
+        self.pressed_color = (
+            46,
+            204,
+            113
+        )
+
+    # =====================================================
+    # PRESS
+    # =====================================================
+
+    def press(self):
+
+        if self.triggered:
+            return
+
+        self.triggered = False
+        self.is_unlocked = True
+
+        print(
+            "🔘 CodePanel: przycisk aktywowany!"
         )
 
     # =====================================================
@@ -410,7 +475,7 @@ class CodePanel(Interactive):
         **kwargs
     ):
 
-        if self.is_unlocked:
+        if self.triggered:
             return
 
         if player is None:
@@ -429,31 +494,24 @@ class CodePanel(Interactive):
             player_rect.center
         )
 
-        panel_center = pygame.Vector2(
+        button_center = pygame.Vector2(
             self.rect.center
         )
 
         distance = (
-            player_center - panel_center
+            player_center
+            - button_center
         ).length()
 
-        # =================================================
-        # E - OTWARCIE PANELU
-        # =================================================
+        if (
+            distance <= self.interaction_distance
+            and pygame.key.get_pressed()[pygame.K_e]
+        ):
 
-        if not self.input_active:
-
-            if (
-                distance <= self.interaction_distance
-                and pygame.key.get_pressed()[pygame.K_e]
-            ):
-
-                self.input_active = True
-                self.entered_code = ""
-                self.message = ""
+            self.press()
 
     # =====================================================
-    # HANDLE EVENT
+    # EVENT
     # =====================================================
 
     def handle_event(
@@ -461,75 +519,12 @@ class CodePanel(Interactive):
         event
     ):
 
-        if not self.input_active:
-            return
+        # Przycisk jest aktywowany w update()
+        # przez klawisz E.
+        #
+        # Nic nie trzeba tutaj robić.
 
-        if event.type != pygame.KEYDOWN:
-            return
-
-        # =================================================
-        # ENTER
-        # =================================================
-
-        if event.key == pygame.K_RETURN:
-
-            if self.entered_code == self.code:
-
-                self.triggered = True
-                self.is_unlocked = True
-                self.input_active = False
-
-                self.message = (
-                    "POPRAWNY KOD!"
-                )
-
-                print(
-                    "🔓 CodePanel: poprawny kod!"
-                )
-
-            else:
-
-                self.entered_code = ""
-
-                self.message = (
-                    "BŁĘDNY KOD!"
-                )
-
-                print(
-                    "❌ CodePanel: błędny kod!"
-                )
-
-        # =================================================
-        # BACKSPACE
-        # =================================================
-
-        elif event.key == pygame.K_BACKSPACE:
-
-            self.entered_code = (
-                self.entered_code[:-1]
-            )
-
-        # =================================================
-        # ESC
-        # =================================================
-
-        elif event.key == pygame.K_ESCAPE:
-
-            self.input_active = False
-            self.entered_code = ""
-            self.message = ""
-
-        # =================================================
-        # CYFRY
-        # =================================================
-
-        elif event.unicode.isdigit():
-
-            if len(self.entered_code) < 10:
-
-                self.entered_code += (
-                    event.unicode
-                )
+        pass
 
     # =====================================================
     # DRAW
@@ -540,25 +535,13 @@ class CodePanel(Interactive):
         surface
     ):
 
-        # =================================================
-        # KOLOR PANELU
-        # =================================================
+        if self.triggered:
 
-        if self.is_unlocked:
-
-            color = (
-                46,
-                204,
-                113
-            )
+            color = self.pressed_color
 
         else:
 
-            color = (
-                100,
-                100,
-                100
-            )
+            color = self.color
 
         pygame.draw.rect(
             surface,
@@ -573,14 +556,11 @@ class CodePanel(Interactive):
             2
         )
 
-        # =================================================
-        # E - INFORMACJA
-        # =================================================
+        # -------------------------------------------------
+        # INFORMACJA DLA GRACZA
+        # -------------------------------------------------
 
-        if (
-            not self.input_active
-            and not self.is_unlocked
-        ):
+        if not self.triggered:
 
             font = pygame.font.Font(
                 None,
@@ -588,7 +568,7 @@ class CodePanel(Interactive):
             )
 
             info = font.render(
-                "E - kod",
+                "E - przycisk",
                 True,
                 "white"
             )
@@ -603,102 +583,26 @@ class CodePanel(Interactive):
                 info_rect
             )
 
-        # =================================================
-        # GUI KODU
-        # =================================================
-
-        if self.input_active:
+        else:
 
             font = pygame.font.Font(
                 None,
-                28
-            )
-
-            background = pygame.Rect(
-                self.rect.centerx - 120,
-                self.rect.centery - 50,
-                240,
-                100
-            )
-
-            pygame.draw.rect(
-                surface,
-                "black",
-                background
-            )
-
-            pygame.draw.rect(
-                surface,
-                "white",
-                background,
-                2
-            )
-
-            hidden_code = (
-                "*" * len(
-                    self.entered_code
-                )
-            )
-
-            text = font.render(
-                hidden_code,
-                True,
-                "white"
-            )
-
-            text_rect = text.get_rect(
-                center=background.center
-            )
-
-            surface.blit(
-                text,
-                text_rect
+                18
             )
 
             info = font.render(
-                "ENTER = zatwierdź",
+                "AKTYWNY",
                 True,
                 "white"
             )
 
             info_rect = info.get_rect(
-                centerx=background.centerx,
-                top=background.bottom + 5
+                center=self.rect.center
             )
 
             surface.blit(
                 info,
                 info_rect
-            )
-
-        # =================================================
-        # KOMUNIKAT
-        # =================================================
-
-        if (
-            self.message
-            and not self.input_active
-        ):
-
-            font = pygame.font.Font(
-                None,
-                24
-            )
-
-            text = font.render(
-                self.message,
-                True,
-                "white"
-            )
-
-            text_rect = text.get_rect(
-                centerx=self.rect.centerx,
-                bottom=self.rect.top - 5
-            )
-
-            surface.blit(
-                text,
-                text_rect
             )
 
 
@@ -803,6 +707,7 @@ class Door(Interactive):
         )
 
         self.is_open = False
+        self.previous_open = False
 
         self.trigger_object = (
             trigger_object
@@ -814,53 +719,153 @@ class Door(Interactive):
             19
         )
 
-    def update(
+        self.closed_animation = "closed"
+        self.open_animation = "open"
+
+    # =====================================================
+    # SET DOOR ANIMATIONS
+    # =====================================================
+
+    def set_door_animations(
         self,
-        creature,
-        ghost=None,
-        dt=0,
-        *args,
-        **kwargs
+        closed="closed",
+        opened="open"
     ):
+
+        self.closed_animation = closed
+        self.open_animation = opened
+
+        if self.is_open:
+
+            self.play(
+                self.open_animation
+            )
+
+        else:
+
+            self.play(
+                self.closed_animation
+            )
+
+    # =====================================================
+    # UPDATE
+    # =====================================================
+
+    def update(
+            self,
+            creature,
+            ghost=None,
+            dt=0,
+            *args,
+            **kwargs
+    ):
+
+        new_open_state = False
+
+        # =================================================
+        # SPRAWDZENIE TRIGGERA
+        # =================================================
 
         if self.trigger_object:
 
             if hasattr(
-                self.trigger_object,
-                "enabled"
+                    self.trigger_object,
+                    "enabled"
             ):
 
-                self.is_open = (
+                new_open_state = (
                     self.trigger_object.enabled
                 )
 
             elif hasattr(
-                self.trigger_object,
-                "is_unlocked"
+                    self.trigger_object,
+                    "is_unlocked"
             ):
 
-                self.is_open = (
+                new_open_state = (
                     self.trigger_object.is_unlocked
                 )
 
             elif hasattr(
-                self.trigger_object,
-                "triggered"
+                    self.trigger_object,
+                    "triggered"
             ):
 
-                self.is_open = (
+                new_open_state = (
                     self.trigger_object.triggered
                 )
+
+        # =================================================
+        # ZMIANA STANU DRZWI
+        # =================================================
+
+        if new_open_state != self.is_open:
+
+            self.is_open = new_open_state
+
+            if self.is_open:
+
+                if (
+                        self.sprite
+                        and self.open_animation in self.sprite.animations
+                ):
+                    self.play(
+                        self.open_animation,
+                        reset=True
+                    )
+
+            else:
+
+                if (
+                        self.sprite
+                        and self.closed_animation in self.sprite.animations
+                ):
+                    self.play(
+                        self.closed_animation,
+                        reset=True
+                    )
+
+        # =================================================
+        # ANIMACJA
+        # =================================================
+
+        self.update_animation(dt)
+
+        self.previous_open = self.is_open
+
+    # =====================================================
+    # DRAW
+    # =====================================================
 
     def draw(
         self,
         surface
     ):
 
+        if (
+            self.sprite
+            and self.sprite.current
+        ):
+
+            self.sprite.draw(
+                surface
+            )
+
+            return
+
         if not self.is_open:
 
-            super().draw(
-                surface
+            pygame.draw.rect(
+                surface,
+                self.color,
+                self.rect
+            )
+
+            pygame.draw.rect(
+                surface,
+                "black",
+                self.rect,
+                2
             )
 
 
@@ -901,7 +906,7 @@ class LevelGate(Interactive):
     ):
 
         if self.triggered:
-            return
+            self.triggered = False
 
         if ghost is None:
             return
@@ -964,7 +969,9 @@ class InteractiveManager:
 
         if obj not in self.objects:
 
-            self.objects.append(obj)
+            self.objects.append(
+                obj
+            )
 
     def remove(
         self,
@@ -973,7 +980,9 @@ class InteractiveManager:
 
         if obj in self.objects:
 
-            self.objects.remove(obj)
+            self.objects.remove(
+                obj
+            )
 
     def clear(self):
 

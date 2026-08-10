@@ -5,7 +5,11 @@ from Interactive import ScoringButton
 
 class GameUpdate:
 
-    def __init__(self, game):
+    def __init__(
+        self,
+        game
+    ):
+
         self.game = game
 
     # =====================================================
@@ -13,9 +17,15 @@ class GameUpdate:
     # =====================================================
 
     @staticmethod
-    def get_rect(obj):
+    def get_rect(
+        obj
+    ):
 
-        if hasattr(obj, "rect"):
+        if hasattr(
+            obj,
+            "rect"
+        ):
+
             return obj.rect
 
         return obj
@@ -32,7 +42,9 @@ class GameUpdate:
         obstacles
     ):
 
-        ghost_rect = ghost.rect.copy()
+        ghost_rect = (
+            ghost.rect.copy()
+        )
 
         # -------------------------------------------------
         # X
@@ -42,13 +54,16 @@ class GameUpdate:
 
         for obstacle in obstacles:
 
-            obstacle_rect = self.get_rect(
-                obstacle
+            obstacle_rect = (
+                self.get_rect(
+                    obstacle
+                )
             )
 
             if not ghost_rect.colliderect(
                 obstacle_rect
             ):
+
                 continue
 
             if dx > 0:
@@ -71,13 +86,16 @@ class GameUpdate:
 
         for obstacle in obstacles:
 
-            obstacle_rect = self.get_rect(
-                obstacle
+            obstacle_rect = (
+                self.get_rect(
+                    obstacle
+                )
             )
 
             if not ghost_rect.colliderect(
                 obstacle_rect
             ):
+
                 continue
 
             if dy > 0:
@@ -92,6 +110,10 @@ class GameUpdate:
                     obstacle_rect.bottom
                 )
 
+        # -------------------------------------------------
+        # SCREEN BOUNDS
+        # -------------------------------------------------
+
         ghost_rect.clamp_ip(
             pygame.Rect(
                 0,
@@ -105,7 +127,9 @@ class GameUpdate:
         # SYNCHRONIZACJA
         # -------------------------------------------------
 
-        ghost.rect = ghost_rect
+        ghost.rect = (
+            ghost_rect
+        )
 
         ghost.pos.x = float(
             ghost_rect.centerx
@@ -119,33 +143,69 @@ class GameUpdate:
     # OBSTACLES
     # =====================================================
 
-    def get_obstacles(self):
+    def get_obstacles(
+        self
+    ):
 
         game = self.game
+
+        # =================================================
+        # PLATFORMY + ŚCIANY
+        # =================================================
+
+        if hasattr(
+            game.platform_mgr,
+            "get_obstacles"
+        ):
+
+            obstacles = (
+                game.platform_mgr
+                .get_obstacles()
+                .copy()
+            )
+
+        else:
+
+            obstacles = (
+                game.platform_mgr
+                .platforms
+                .copy()
+            )
+
+        # =================================================
+        # INTERACTIVE SOLID
+        # =================================================
 
         interactive_objs = (
             game.interactive_mgr.objects
         )
 
         solid_interactive = [
+
             obj
+
             for obj in interactive_objs
+
             if (
-                (
-                    hasattr(obj, "is_open")
-                    and not obj.is_open
-                    and not isinstance(
-                        obj,
-                        ScoringButton
-                    )
+                hasattr(
+                    obj,
+                    "is_open"
+                )
+
+                and not obj.is_open
+
+                and not isinstance(
+                    obj,
+                    ScoringButton
                 )
             )
         ]
 
-        return (
-            game.platform_mgr.platforms
-            + solid_interactive
+        obstacles.extend(
+            solid_interactive
         )
+
+        return obstacles
 
     # =====================================================
     # PLAYER
@@ -186,6 +246,10 @@ class GameUpdate:
             platforms=obstacles
         )
 
+        # -------------------------------------------------
+        # SCREEN CLAMP
+        # -------------------------------------------------
+
         game.player.rect.clamp_ip(
             pygame.Rect(
                 0,
@@ -203,14 +267,21 @@ class GameUpdate:
             game.player.rect.centery
         )
 
-    # =================================================
-    # SPRAWDZANIE CZY GRACZ JEST POZA EKRANEM
-    # =================================================
-    def check_player_out_of_bounds(self):
+    # =====================================================
+    # PLAYER OUT OF BOUNDS
+    # =====================================================
+
+    def check_player_out_of_bounds(
+        self
+    ):
+
         game = self.game
+
         if (
-            game.player.rect.bottom >= game.height
+            game.player.rect.bottom
+            >= game.height
         ):
+
             game.player.hp = 0
 
     # =====================================================
@@ -245,7 +316,8 @@ class GameUpdate:
             game.ghost.update_rect()
 
         game.ghost.update(
-            game.clock.get_time() / 1000.0
+            game.clock.get_time()
+            / 1000.0
         )
 
     # =====================================================
@@ -259,20 +331,38 @@ class GameUpdate:
 
         game = self.game
 
+        # =================================================
+        # PLATFORMY + ŚCIANY
+        # =================================================
+
+        obstacles = (
+            game.platform_mgr
+            .get_obstacles()
+        )
+
+        # =================================================
+        # ENEMIES
+        # =================================================
+
         for enemy in game.level.enemies:
 
             enemy.update(
                 dt,
                 player_pos=game.player.pos,
-                platforms=game.platform_mgr
+                platforms=obstacles
             )
+
+            # -------------------------------------------------
+            # SHOOT
+            # -------------------------------------------------
 
             if (
                 getattr(
                     enemy,
                     "shoot_cooldown",
                     0
-                ) <= 0
+                )
+                <= 0
             ):
 
                 if hasattr(
@@ -307,7 +397,8 @@ class GameUpdate:
         )
 
         for projectile in (
-            game.projectile_mgr.get_projectiles()
+            game.projectile_mgr
+            .get_projectiles()
         ):
 
             if game.player.rect.colliderect(
@@ -324,20 +415,32 @@ class GameUpdate:
 
                 print(
                     "💥 Trafienie! "
-                    f"HP gracza: {game.player.hp}"
+                    f"HP gracza: "
+                    f"{game.player.hp}"
                 )
 
     # =====================================================
     # GAMEPLAY UPDATE
     # =====================================================
+
     def update_game(
-            self,
-            dt
+        self,
+        dt
     ):
 
         game = self.game
 
-        obstacles = self.get_obstacles()
+        # =================================================
+        # OBSTACLES
+        # =================================================
+
+        obstacles = (
+            self.get_obstacles()
+        )
+
+        # =================================================
+        # PLAYER
+        # =================================================
 
         self.update_player(
             dt,
@@ -346,32 +449,47 @@ class GameUpdate:
 
         self.check_player_out_of_bounds()
 
+        # =================================================
+        # GHOST
+        # =================================================
+
         self.update_ghost(
             obstacles
         )
 
+        # =================================================
+        # ENEMIES
+        # =================================================
 
         self.update_enemies(
             dt
         )
 
+        # =================================================
+        # PROJECTILES
+        # =================================================
+
         self.update_projectiles(
             dt
         )
 
-        # -------------------------------------------------
+        # =================================================
         # DEATH
-        # -------------------------------------------------
+        # =================================================
 
         if game.player.hp <= 0:
+
             game.stop_game_mouse()
-            game.set_state(game.FAILURE)
+
+            game.set_state(
+                game.FAILURE
+            )
 
             return
 
-        # -------------------------------------------------
+        # =================================================
         # INTERACTIVE
-        # -------------------------------------------------
+        # =================================================
 
         game.interactive_mgr.update_all(
             game.player,
@@ -379,17 +497,18 @@ class GameUpdate:
             dt
         )
 
-        # -------------------------------------------------
-        # LEVEL GATE
-        # -------------------------------------------------
-        # -------------------------------------------------
-        # SPRAWDZANIE WYJŚCIA POZA EKRAN
-        # -------------------------------------------------
+        # =================================================
+        # PLAYER OUTSIDE LEVEL
+        # =================================================
 
         if (
-                game.player.pos.y > game.height
-                or game.player.rect.top > game.height
+            game.player.pos.y
+            > game.height
+
+            or game.player.rect.top
+            > game.height
         ):
+
             print(
                 "⚠️ GRACZ SPADŁ:",
                 game.player.pos,
@@ -399,26 +518,42 @@ class GameUpdate:
             game.player.hp = 0
 
             game.stop_game_mouse()
-            game.set_state(game.FAILURE)
+
+            game.set_state(
+                game.FAILURE
+            )
 
             return
+
+        # =================================================
+        # LEVEL GATE
+        # =================================================
+
         self.check_level_gate()
 
     # =====================================================
     # LEVEL GATE
     # =====================================================
-    def check_level_gate(self):
+
+    def check_level_gate(
+        self
+    ):
 
         game = self.game
 
         for obj in game.interactive_mgr:
 
             if not getattr(
-                    obj,
-                    "triggered",
-                    False
+                obj,
+                "triggered",
+                False
             ):
+
                 continue
+
+            # =================================================
+            # CURRENT LEVEL INDEX
+            # =================================================
 
             try:
 
@@ -432,20 +567,21 @@ class GameUpdate:
 
                 current_index = -1
 
-            # -------------------------------------------------
+            # =================================================
             # NEXT LEVEL
-            # -------------------------------------------------
+            # =================================================
 
             if (
-                    current_index >= 0
-                    and current_index + 1
-                    < len(game.available_levels)
+                current_index >= 0
+
+                and current_index + 1
+                < len(game.available_levels)
             ):
 
                 next_level = (
                     game.available_levels[
                         current_index + 1
-                        ]
+                    ]
                 )
 
                 print(
@@ -466,23 +602,29 @@ class GameUpdate:
                 obj.triggered = False
 
                 game.start_game_mouse()
-                game.set_state(game.PLAYING)
 
-            # -------------------------------------------------
+                game.set_state(
+                    game.PLAYING
+                )
+
+            # =================================================
             # KONIEC GRY
-            # -------------------------------------------------
+            # =================================================
 
             else:
 
                 print(
-                    "🏆 Ukończono wszystkie poziomy!"
+                    "🏆 Ukończono "
+                    "wszystkie poziomy!"
                 )
 
                 game.stop_game_mouse()
 
                 obj.triggered = False
 
-                game.set_state(game.VICTORY)
+                game.set_state(
+                    game.VICTORY
+                )
 
             break
 
@@ -497,35 +639,59 @@ class GameUpdate:
 
         game = self.game
 
-        if game.current_state == game.MENU:
+        if (
+            game.current_state
+            == game.MENU
+        ):
 
             game.main_menu.update()
 
-        elif game.current_state == game.LEVEL_SELECT:
+        elif (
+            game.current_state
+            == game.LEVEL_SELECT
+        ):
 
             game.level_select_menu.update()
 
-        elif game.current_state == game.PAUSE:
+        elif (
+            game.current_state
+            == game.PAUSE
+        ):
 
             game.pause_menu.update()
 
-        elif game.current_state == game.OPTIONS:
+        elif (
+            game.current_state
+            == game.OPTIONS
+        ):
 
             game.options_menu.update()
 
-        elif game.current_state == game.CREDITS:
+        elif (
+            game.current_state
+            == game.CREDITS
+        ):
 
             game.credits_menu.update()
 
-        elif game.current_state == game.FAILURE:
+        elif (
+            game.current_state
+            == game.FAILURE
+        ):
 
             game.failure_menu.update()
 
-        elif game.current_state == game.VICTORY:
+        elif (
+            game.current_state
+            == game.VICTORY
+        ):
 
             game.victory_menu.update()
 
-        elif game.current_state == game.PLAYING:
+        elif (
+            game.current_state
+            == game.PLAYING
+        ):
 
             self.update_game(
                 dt
