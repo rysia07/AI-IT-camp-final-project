@@ -98,6 +98,7 @@ class Game:
             "level2.txt",
             "level3.txt",
             "level4.txt",
+            "level5.txt"
         ]
 
         self.current_level_file = (
