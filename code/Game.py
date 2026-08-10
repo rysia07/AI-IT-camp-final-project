@@ -97,9 +97,10 @@ class Game:
         self.available_levels = [
             "level1.txt",
             "level2.txt",
-            "level6.txt",
             "level3.txt",
-            "level4.txt"
+            "level4.txt",
+            "level5.txt",
+            "level6.txt"
         ]
 
         self.current_level_file = (
