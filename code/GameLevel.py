@@ -1,4 +1,5 @@
 import pygame
+
 from LoadLevels import load_level
 from Platforms import PlatformManager
 
@@ -14,41 +15,80 @@ class GameLevel:
     """
     Zarządza ładowaniem i przygotowywaniem poziomów.
 
-    Odpowiada za:
-    - wczytywanie pliku poziomu,
+    Obsługuje:
     - platformy,
+    - ściany,
     - obiekty interaktywne,
     - gracza,
     - ducha,
     - przeciwników,
-    - pociski,
-    - CharacterManager.
+    - pociski.
     """
 
-    def __init__(self, game):
+    def __init__(
+        self,
+        game
+    ):
+
         self.game = game
 
     # =====================================================
-    # LOAD LEVEL
+    # FIND LEVEL FILE
     # =====================================================
 
-    def load(self, level_filename):
-        """
-        Wczytuje poziom i tworzy wszystkie obiekty potrzebne
-        do jego działania.
-        """
-
-        game = self.game
+    @staticmethod
+    def _load_level_file(
+        level_filename
+    ):
 
         try:
-            level = load_level(
+
+            return load_level(
                 f"../levels/{level_filename}"
             )
 
         except FileNotFoundError:
-            level = load_level(
+
+            return load_level(
                 level_filename
             )
+
+    # =====================================================
+    # CREATE PLATFORM MANAGER
+    # =====================================================
+
+    def create_platform_manager(
+        self,
+        level
+    ):
+
+        return PlatformManager(
+            "../pictures/platform_left.png",
+            "../pictures/platform_middle.png",
+            "../pictures/platform_right.png",
+            "../pictures/wall.png",
+            platforms=level.platforms,
+            walls=getattr(
+                level,
+                "walls",
+                []
+            )
+        )
+
+    # =====================================================
+    # LOAD
+    # =====================================================
+
+    def load(
+        self,
+        level_filename
+    ):
+
+        game = self.game
+
+        level = self._load_level_file(
+            level_filename
+        )
 
         game.level = level
 
@@ -61,19 +101,22 @@ class GameLevel:
         )
 
         # -------------------------------------------------
-        # PLATFORMS
+        # PLATFORMS + WALLS
         # -------------------------------------------------
 
-        game.platform_mgr = PlatformManager(
-            "../pictures/platforma.png",
-            level.platforms
+        game.platform_mgr = (
+            self.create_platform_manager(
+                level
+            )
         )
 
         # -------------------------------------------------
         # PROJECTILES
         # -------------------------------------------------
 
-        game.projectile_mgr = ProjectileManager()
+        game.projectile_mgr = (
+            ProjectileManager()
+        )
 
         # -------------------------------------------------
         # PLAYER
@@ -102,7 +145,9 @@ class GameLevel:
         # CHARACTER MANAGER
         # -------------------------------------------------
 
-        game.char_mgr = CharacterManager()
+        game.char_mgr = (
+            CharacterManager()
+        )
 
         game.char_mgr.add(
             "player",
@@ -114,14 +159,41 @@ class GameLevel:
             game.ghost
         )
 
+        print(
+            f"✅ Załadowano poziom: "
+            f"{level_filename}"
+        )
+
+        print(
+            f"   Platformy: "
+            f"{len(level.platforms)}"
+        )
+
+        print(
+            f"   Ściany: "
+            f"{len(getattr(level, 'walls', []))}"
+        )
+
+        print(
+            f"   Wrogowie: "
+            f"{len(level.enemies)}"
+        )
+
+        print(
+            f"   Interaktywne: "
+            f"{len(level.interactive_manager)}"
+        )
+
+        return level
+
     # =====================================================
     # CREATE PLAYER
     # =====================================================
 
-    def create_player(self, start_pos):
-        """
-        Tworzy gracza wraz z jego animacjami.
-        """
+    def create_player(
+        self,
+        start_pos
+    ):
 
         player = Creature(
             start_pos[0],
@@ -133,9 +205,9 @@ class GameLevel:
 
         try:
 
-            # -------------------------------------------------
+            # =================================================
             # IDLE
-            # -------------------------------------------------
+            # =================================================
 
             player.add_anim(
                 "idle",
@@ -148,9 +220,9 @@ class GameLevel:
                 scale=2.0
             )
 
-            # -------------------------------------------------
+            # =================================================
             # WALK
-            # -------------------------------------------------
+            # =================================================
 
             player.add_anim(
                 "walk",
@@ -163,9 +235,9 @@ class GameLevel:
                 scale=2.0
             )
 
-            # -------------------------------------------------
+            # =================================================
             # ATTACK
-            # -------------------------------------------------
+            # =================================================
 
             player.add_anim(
                 "attack",
@@ -207,9 +279,6 @@ class GameLevel:
         ghost,
         spawn_pos
     ):
-        """
-        Resetuje gracza i ducha do pozycji startowej.
-        """
 
         # -------------------------------------------------
         # PLAYER
@@ -254,160 +323,42 @@ class GameLevel:
     # LOAD NEXT LEVEL
     # =====================================================
 
-    def load_level(self, level_filename):
-
-        try:
-            level = load_level(
-                f"../levels/{level_filename}"
-            )
-
-        except FileNotFoundError:
-            level = load_level(
-                level_filename
-            )
-
-        self.game.level = level
-
-        # =====================================================
-        # INTERACTIVE
-        # =====================================================
-
-        self.game.interactive_mgr = (
-            level.interactive_manager
-        )
-
-        # =====================================================
-        # PLATFORMS
-        # =====================================================
-
-        self.game.platform_mgr = PlatformManager(
-            "../pictures/platform_left.png",
-            "../pictures/platform_middle.png",
-            "../pictures/platform_right.png",
-            level.platforms
-        )
-
-        # =====================================================
-        # PROJECTILES
-        # =====================================================
-
-        self.game.projectile_mgr = ProjectileManager()
-
-        # =====================================================
-        # PLAYER
-        # =====================================================
-
-        self.game.player = self.game.create_player(
-            level.player_pos
-        )
-
-        # =====================================================
-        # GHOST
-        # =====================================================
-
-        mouse_x, mouse_y = pygame.mouse.get_pos()
-
-        self.game.ghost = GhostMouse(
-            mouse_x,
-            mouse_y
-        )
-
-        self.game.ghost.update_rect()
-
-        self.game.ghost.last_pos = (
-            self.game.ghost.pos.copy()
-        )
-
-        # =====================================================
-        # CHARACTER MANAGER
-        # =====================================================
-
-        self.game.char_mgr = CharacterManager()
-
-        self.game.char_mgr.add(
-            "player",
-            self.game.player
-        )
-
-        self.game.char_mgr.add(
-            "ghost",
-            self.game.ghost
-        )
-
-        print(
-            f"✅ Załadowano poziom: {level_filename}"
-        )
-
-    def check_gate(self):
+    def load_level(
+        self,
+        level_filename
+    ):
 
         game = self.game
 
-        for obj in game.interactive_mgr:
+        level = self._load_level_file(
+            level_filename
+        )
 
-            if not getattr(obj, "triggered", False):
-                continue
-
-            if self.load_level(game.current_level_file):
-
-                obj.triggered = False
-
-                game.start_game_mouse()
-                game.current_state = game.PLAYING
-
-            else:
-
-                obj.triggered = False
-
-                game.stop_game_mouse()
-                game.current_state = game.VICTORY
-
-            break
-
-    def load_level(self, level_filename):
-        """
-        Ładuje poziom i tworzy wszystkie obiekty potrzebne przez Game.
-        """
-
-        try:
-            level = load_level(
-                f"../levels/{level_filename}"
-            )
-
-        except FileNotFoundError:
-            level = load_level(
-                level_filename
-            )
-
-        # -------------------------------------------------
-        # ZAPIS POZIOMU
-        # -------------------------------------------------
-
-        self.game.level = level
+        game.level = level
 
         # -------------------------------------------------
         # INTERACTIVE
         # -------------------------------------------------
 
-        self.game.interactive_mgr = (
+        game.interactive_mgr = (
             level.interactive_manager
         )
 
         # -------------------------------------------------
-        # PLATFORMS
+        # PLATFORMS + WALLS
         # -------------------------------------------------
 
-        self.game.platform_mgr = PlatformManager(
-            "../pictures/platform_left.png",
-            "../pictures/platform_middle.png",
-            "../pictures/platform_right.png",
-            level.platforms
+        game.platform_mgr = (
+            self.create_platform_manager(
+                level
+            )
         )
 
         # -------------------------------------------------
         # PROJECTILES
         # -------------------------------------------------
 
-        self.game.projectile_mgr = (
+        game.projectile_mgr = (
             ProjectileManager()
         )
 
@@ -415,7 +366,7 @@ class GameLevel:
         # PLAYER
         # -------------------------------------------------
 
-        self.game.player = self.game.create_player(
+        game.player = self.create_player(
             level.player_pos
         )
 
@@ -423,35 +374,57 @@ class GameLevel:
         # GHOST
         # -------------------------------------------------
 
-        mouse_x, mouse_y = pygame.mouse.get_pos()
+        mouse_x, mouse_y = (
+            pygame.mouse.get_pos()
+        )
 
-        self.game.ghost = GhostMouse(
+        game.ghost = GhostMouse(
             mouse_x,
             mouse_y
         )
 
-        self.game.ghost.update_rect()
+        game.ghost.update_rect()
 
-        self.game.ghost.last_pos = (
-            self.game.ghost.pos.copy()
+        game.ghost.last_pos = (
+            game.ghost.pos.copy()
         )
 
         # -------------------------------------------------
         # CHARACTER MANAGER
         # -------------------------------------------------
 
-        self.game.char_mgr = CharacterManager()
-
-        self.game.char_mgr.add(
-            "player",
-            self.game.player
+        game.char_mgr = (
+            CharacterManager()
         )
 
-        self.game.char_mgr.add(
+        game.char_mgr.add(
+            "player",
+            game.player
+        )
+
+        game.char_mgr.add(
             "ghost",
-            self.game.ghost
+            game.ghost
         )
 
         print(
-            f"✅ Załadowano poziom: {level_filename}"
+            f"✅ Załadowano poziom: "
+            f"{level_filename}"
         )
+
+        print(
+            f"   Platformy: "
+            f"{len(level.platforms)}"
+        )
+
+        print(
+            f"   Ściany: "
+            f"{len(getattr(level, 'walls', []))}"
+        )
+
+        print(
+            f"   Wrogowie: "
+            f"{len(level.enemies)}"
+        )
+
+        return True
