@@ -1,9 +1,6 @@
 import pygame
 
-from Interactive import (
-    CodePanel,
-    ScoringButton,
-)
+from Interactive import ScoringButton
 
 
 class GameUpdate:
@@ -95,6 +92,15 @@ class GameUpdate:
                     obstacle_rect.bottom
                 )
 
+        ghost_rect.clamp_ip(
+            pygame.Rect(
+                0,
+                0,
+                self.game.width,
+                self.game.height
+            )
+        )
+
         # -------------------------------------------------
         # SYNCHRONIZACJA
         # -------------------------------------------------
@@ -130,12 +136,8 @@ class GameUpdate:
                     and not obj.is_open
                     and not isinstance(
                         obj,
-                        CodePanel
+                        ScoringButton
                     )
-                )
-                or isinstance(
-                    obj,
-                    ScoringButton
                 )
             )
         ]
@@ -182,6 +184,23 @@ class GameUpdate:
         game.char_mgr.update_all(
             dt,
             platforms=obstacles
+        )
+
+        game.player.rect.clamp_ip(
+            pygame.Rect(
+                0,
+                0,
+                game.width,
+                game.height
+            )
+        )
+
+        game.player.pos.x = float(
+            game.player.rect.centerx
+        )
+
+        game.player.pos.y = float(
+            game.player.rect.centery
         )
 
     # =====================================================
@@ -335,8 +354,7 @@ class GameUpdate:
         if game.player.hp <= 0:
 
             game.stop_game_mouse()
-
-            game.current_state = game.FAILURE
+            game.set_state(game.FAILURE)
 
             return
 
@@ -359,7 +377,6 @@ class GameUpdate:
     # =====================================================
     # LEVEL GATE
     # =====================================================
-
     def check_level_gate(self):
 
         game = self.game
@@ -367,11 +384,10 @@ class GameUpdate:
         for obj in game.interactive_mgr:
 
             if not getattr(
-                obj,
-                "triggered",
-                False
+                    obj,
+                    "triggered",
+                    False
             ):
-
                 continue
 
             try:
@@ -391,15 +407,15 @@ class GameUpdate:
             # -------------------------------------------------
 
             if (
-                current_index >= 0
-                and current_index + 1
-                < len(game.available_levels)
+                    current_index >= 0
+                    and current_index + 1
+                    < len(game.available_levels)
             ):
 
                 next_level = (
                     game.available_levels[
                         current_index + 1
-                    ]
+                        ]
                 )
 
                 print(
@@ -420,8 +436,7 @@ class GameUpdate:
                 obj.triggered = False
 
                 game.start_game_mouse()
-
-                game.current_state = game.PLAYING
+                game.set_state(game.PLAYING)
 
             # -------------------------------------------------
             # KONIEC GRY
@@ -437,7 +452,7 @@ class GameUpdate:
 
                 obj.triggered = False
 
-                game.current_state = game.VICTORY
+                game.set_state(game.VICTORY)
 
             break
 

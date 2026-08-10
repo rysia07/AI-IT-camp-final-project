@@ -340,15 +340,27 @@ class Game:
     # =====================================================
     # MOUSE GAME MODE
     # =====================================================
-
     def start_game_mouse(self):
 
-        pygame.mouse.set_visible(
-            False
+        pygame.mouse.set_visible(False)
+
+        pygame.event.set_grab(True)
+
+        mouse_x, mouse_y = pygame.mouse.get_pos()
+
+        mouse_x = max(
+            0,
+            min(mouse_x, self.width - 1)
         )
 
-        pygame.event.set_grab(
-            True
+        mouse_y = max(
+            0,
+            min(mouse_y, self.height - 1)
+        )
+
+        pygame.mouse.set_pos(
+            mouse_x,
+            mouse_y
         )
 
         pygame.mouse.get_rel()

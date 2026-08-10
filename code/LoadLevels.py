@@ -4,7 +4,6 @@ import pygame
 from Characters import ShootingEnemy
 from Interactive import (
     Lever,
-    CodePanel,
     ScoringButton,
     Door,
     LevelGate,
@@ -180,33 +179,6 @@ def load_level(filepath):
                             ),
                             "line": line_number
                         })
-
-                    # =================================================
-                    # CODE PANEL
-                    #
-                    # codepanel x y code [name]
-                    # =================================================
-
-                    elif object_type == "codepanel":
-
-                        if len(parts) < 4:
-                            print(
-                                f"❌ Line {line_number}: "
-                                "'codepanel' requires "
-                                "'x y code [name]'"
-                            )
-                            continue
-
-                        panel = CodePanel(
-                            float(parts[1]),
-                            float(parts[2]),
-                            code=parts[3]
-                        )
-
-                        level.interactive_manager.add(panel)
-
-                        if len(parts) > 4:
-                            level.objects[parts[4]] = panel
 
                     # =================================================
                     # SCORING BUTTON
