@@ -11,3 +11,4 @@ platform 197 333 100 30 new_platform
 platform 663 244 100 30 new_platform
 platform 800 137 100 30 new_platform
 scoringbutton 50 292 0 new_button
+platform 0 570 900 30 new_platform

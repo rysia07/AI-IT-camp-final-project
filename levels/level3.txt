@@ -15,3 +15,5 @@ platform 593 255 150 30 new_platform6
 door 120 168 30 120 lever new_door
 lever 355 84 100 20 left lever
 platform 0 137 150 30 new_platform
+platform 0 570 400 30 new_platform
+platform 500 566 400 30 new_platform

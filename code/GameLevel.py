@@ -127,7 +127,7 @@ class GameLevel:
             start_pos[0],
             start_pos[1],
             speed=400,
-            jump_force=-700,
+            jump_force=-450,
             spritesheet_path="../pictures/ludzik.png"
         )
 
@@ -376,7 +376,9 @@ class GameLevel:
         # -------------------------------------------------
 
         self.game.platform_mgr = PlatformManager(
-            "../pictures/platforma.png",
+            "../pictures/platform_left.png",
+            "../pictures/platform_middle.png",
+            "../pictures/platform_right.png",
             level.platforms
         )
 

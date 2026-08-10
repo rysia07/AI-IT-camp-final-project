@@ -239,7 +239,7 @@ class Creature(Character):
         x,
         y,
         speed=400,
-        jump_force=-700,
+        jump_force=-150,
         spritesheet_path=None
     ):
 
