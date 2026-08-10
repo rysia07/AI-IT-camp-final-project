@@ -394,40 +394,99 @@ class GameUpdate:
     # =====================================================
     # PROJECTILES
     # =====================================================
-
     def update_projectiles(
-        self,
-        dt
+            self,
+            dt
     ):
 
         game = self.game
 
+        # =================================================
+        # AKTUALIZACJA POCISKÓW + ŚCIANY
+        # =================================================
+
         game.projectile_mgr.update(
-            dt
+            dt,
+            game.platform_mgr.platforms
         )
 
+        # =================================================
+        # TRAFIENIA
+        # =================================================
+
         for projectile in (
-            game.projectile_mgr
-            .get_projectiles()
+                game.projectile_mgr.get_projectiles()
         ):
 
-            if game.player.rect.colliderect(
-                projectile.rect
-            ):
+            # -------------------------------------------------
+            # POCISK WROGA -> GRACZ
+            # -------------------------------------------------
 
-                game.player.hp -= getattr(
-                    projectile,
-                    "damage",
-                    10
+            if projectile.owner == "enemy":
+
+                if (
+                        game.player is not None
+                        and game.player.rect.colliderect(
+                    projectile.rect
                 )
+                ):
+                    game.player.hp -= getattr(
+                        projectile,
+                        "damage",
+                        10
+                    )
 
-                projectile.is_dead = True
+                    projectile.is_dead = True
 
-                print(
-                    "💥 Trafienie! "
-                    f"HP gracza: "
-                    f"{game.player.hp}"
-                )
+                    print(
+                        "💥 Pocisk wroga trafił gracza! "
+                        f"HP: {game.player.hp}"
+                    )
+
+            # -------------------------------------------------
+            # POCISK GRACZA -> WRÓG
+            # -------------------------------------------------
+
+            elif projectile.owner == "player":
+
+                for enemy in game.char_mgr.characters.values():
+
+                    # Tylko ShootingEnemy / obiekty
+                    # posiadające take_damage
+                    if not hasattr(
+                            enemy,
+                            "take_damage"
+                    ):
+                        continue
+
+                    if not hasattr(
+                            enemy,
+                            "is_alive"
+                    ):
+                        continue
+
+                    if not enemy.is_alive():
+                        continue
+
+                    if enemy.rect.colliderect(
+                            projectile.rect
+                    ):
+                        enemy.take_damage(
+                            getattr(
+                                projectile,
+                                "damage",
+                                10
+                            )
+                        )
+
+                        projectile.is_dead = True
+
+                        print(
+                            "💥 Pocisk gracza trafił wroga! "
+                            f"HP wroga: {enemy.hp}"
+                        )
+
+                        break
 
     # =====================================================
     # GAMEPLAY UPDATE

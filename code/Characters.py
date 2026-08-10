@@ -293,6 +293,11 @@ class Creature(Character):
         self.walk_anim = "walk"
         self.idle_anim = "idle"
 
+        self.projectile_speed = 500
+        self.projectile_damage = 10
+        self.shoot_cooldown = 0.0
+        self.shoot_interval = 0.2
+
     # =========================================================
     # JUMP
     # =========================================================
@@ -323,6 +328,36 @@ class Creature(Character):
             direction * self.speed
         )
 
+    def shoot(
+            self,
+            direction_x,
+            direction_y
+    ):
+
+        if self.shoot_cooldown > 0:
+            return None
+
+        direction = pygame.Vector2(
+            direction_x,
+            direction_y
+        )
+
+        if direction.length_squared() == 0:
+            return None
+
+        direction = direction.normalize()
+
+        self.shoot_cooldown = self.shoot_interval
+
+        return Projectile(
+            self.pos.x,
+            self.pos.y,
+            direction.x * self.projectile_speed,
+            direction.y * self.projectile_speed,
+            damage=self.projectile_damage,
+            color="cyan",
+            owner="player"
+        )
     # =========================================================
     # COLLISION RECT
     # =========================================================
@@ -738,7 +773,8 @@ class ShootingEnemy(Character):
             dx * self.projectile_speed,
             dy * self.projectile_speed,
             damage=self.projectile_damage,
-            color="orange"
+            color="orange",
+            owner="enemy"
         )
 
     # =========================================================
@@ -1091,18 +1127,18 @@ class CharacterManager:
 # =========================================================
 # PROJECTILE
 # =========================================================
-
 class Projectile:
 
     def __init__(
-        self,
-        x: float,
-        y: float,
-        vx: float,
-        vy: float,
-        damage: int = 10,
-        color: str = "yellow",
-        lifetime: float = 5.0
+            self,
+            x,
+            y,
+            vx,
+            vy,
+            damage=10,
+            color="yellow",
+            lifetime=5.0,
+            owner=None
     ):
 
         self.pos = pygame.Vector2(
@@ -1119,6 +1155,7 @@ class Projectile:
 
         self.damage = damage
         self.color = color
+        self.owner = owner
 
         self.lifetime = lifetime
         self.age = 0.0
@@ -1137,48 +1174,6 @@ class Projectile:
             int(self.pos.y)
         )
 
-    def update(
-        self,
-        dt: float
-    ):
-
-        self.age += dt
-
-        self.pos += (
-            self.vel * dt
-        )
-
-        self.rect.center = (
-            int(self.pos.x),
-            int(self.pos.y)
-        )
-
-        if self.age >= self.lifetime:
-
-            self.is_dead = True
-
-    def is_alive(self):
-
-        return (
-            not self.is_dead
-            and self.age < self.lifetime
-        )
-
-    def draw(
-        self,
-        surface
-    ):
-
-        pygame.draw.circle(
-            surface,
-            self.color,
-            (
-                int(self.pos.x),
-                int(self.pos.y)
-            ),
-            self.radius
-        )
-
 
 # =========================================================
 # PROJECTILE MANAGER
@@ -1190,6 +1185,57 @@ class ProjectileManager:
 
         self.projectiles = []
 
+
+    def update(
+            self,
+            dt,
+            platforms
+    ):
+
+        for projectile in self.projectiles[:]:
+
+            projectile.update()
+
+            # =============================================
+            # POCISK JUŻ NIE ŻYJE
+            # =============================================
+
+            if not projectile.is_alive():
+                self.projectiles.remove(
+                    projectile
+                )
+
+                continue
+
+            # =============================================
+            # KOLIZJA ZE ŚCIANĄ / PLATFORMĄ
+            # =============================================
+
+            hit_wall = False
+
+            for platform in platforms:
+
+                platform_rect = (
+                    platform.rect
+                    if hasattr(platform, "rect")
+                    else platform
+                )
+
+                if projectile.rect.colliderect(
+                        platform_rect
+                ):
+                    hit_wall = True
+                    break
+
+            # =============================================
+            # USUNIĘCIE POCISKU
+            # =============================================
+
+            if hit_wall:
+                self.projectiles.remove(
+                    projectile
+                )
+
     def add(
         self,
         projectile
@@ -1199,31 +1245,6 @@ class ProjectileManager:
             self.projectiles.append(
                 projectile
             )
-
-    def update(
-        self,
-        dt: float,
-        *args,
-        **kwargs
-    ):
-
-        for projectile in self.projectiles[:]:
-
-            projectile.update(dt)
-
-            if (
-                not projectile.is_alive()
-                or getattr(
-                    projectile,
-                    "is_dead",
-                    False
-                )
-            ):
-
-                self.projectiles.remove(
-                    projectile
-                )
-
     def draw_all(
         self,
         surface

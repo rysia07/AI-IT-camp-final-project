@@ -396,6 +396,61 @@ class GameInput:
 
                 game.state.main_menu()
 
+    def handle_player_shooting(self):
+
+        game = self.game
+
+        if not game.state.is_playing():
+            return
+
+        if game.player is None:
+            return
+
+        if game.projectile_mgr is None:
+            return
+
+        keys = pygame.key.get_pressed()
+
+        dx = 0
+        dy = 0
+
+        # -------------------------------------------------
+        # KIERUNEK
+        # -------------------------------------------------
+
+        if keys[pygame.K_LEFT]:
+            dx -= 1
+
+        if keys[pygame.K_RIGHT]:
+            dx += 1
+
+        if keys[pygame.K_UP]:
+            dy -= 1
+
+        if keys[pygame.K_DOWN]:
+            dy += 1
+
+        # -------------------------------------------------
+        # BRAK STRZAŁU
+        # -------------------------------------------------
+
+        if dx == 0 and dy == 0:
+            return
+
+        # -------------------------------------------------
+        # STRZAŁ
+        # -------------------------------------------------
+
+        projectile = game.player.shoot(
+            dx,
+            dy
+        )
+
+        if projectile is not None:
+            game.projectile_mgr.add(
+                projectile
+            )
+
     # =====================================================
     # EVENTS
     # =====================================================
@@ -491,3 +546,10 @@ class GameInput:
                 self.handle_left_click(
                     event
                 )
+
+            # =================================================
+            # PLAYER SHOOTING
+            # =================================================
+
+            if game.state.is_playing():
+                self.handle_player_shooting()
