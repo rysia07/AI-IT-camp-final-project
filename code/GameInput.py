@@ -401,18 +401,12 @@ class GameInput:
         # -------------------------------------------------
         # EVENT LOOP
         # -------------------------------------------------
-
         for event in pygame.event.get():
 
-            # ---------------------------------------------
-            # QUIT
-            # ---------------------------------------------
-
             if event.type == pygame.QUIT:
+                running = False
 
-                game.running = False
-
-                continue
+            game.interactive_mgr.handle_event_all(event)
 
             # ---------------------------------------------
             # OPTIONS EVENTS

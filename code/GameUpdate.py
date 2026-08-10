@@ -207,22 +207,10 @@ class GameUpdate:
     # SPRAWDZANIE CZY GRACZ JEST POZA EKRANEM
     # =================================================
     def check_player_out_of_bounds(self):
-        # tymaszem
         game = self.game
-
-        print(
-            "PLAYER:",
-            game.player.rect,
-            "SCREEN:",
-            game.width,
-            game.height
-        )
-        # tymczasem end
         if (
             game.player.rect.bottom >= game.height
         ):
-            print("⚠️ GRACZ POZA EKRANEM!")
-
             game.player.hp = 0
 
     # =====================================================

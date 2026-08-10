@@ -204,12 +204,7 @@ class Lever(Interactive):
             ghost,
             "last_pos"
         ):
-
             return
-
-        # =================================================
-        # POPRZEDNI HITBOX DUCHA
-        # =================================================
 
         old_rect = ghost.rect.copy()
 
@@ -218,7 +213,6 @@ class Lever(Interactive):
             int(ghost.last_pos.y)
         )
 
-        # Aktualny hitbox
         new_rect = ghost.rect.copy()
 
         # =================================================
@@ -355,11 +349,357 @@ class Lever(Interactive):
         self.color = (
             (46, 204, 113)
             if self.enabled
-            else
-            (231, 76, 60)
+            else (231, 76, 60)
         )
 
-        super().draw(surface)
+        super().draw(
+            surface
+        )
+
+
+# =========================================================
+# CODE PANEL
+# =========================================================
+
+class CodePanel(Interactive):
+
+    def __init__(
+        self,
+        x,
+        y,
+        width=50,
+        height=50,
+        code="1234"
+    ):
+
+        super().__init__(
+            x,
+            y,
+            width,
+            height
+        )
+
+        self.code = str(code)
+
+        self.triggered = False
+        self.is_unlocked = False
+
+        self.input_active = False
+        self.entered_code = ""
+
+        self.message = ""
+
+        self.interaction_distance = 80
+
+        self.color = (
+            100,
+            100,
+            100
+        )
+
+    # =====================================================
+    # UPDATE
+    # =====================================================
+
+    def update(
+        self,
+        player,
+        ghost=None,
+        dt=0,
+        *args,
+        **kwargs
+    ):
+
+        if self.is_unlocked:
+            return
+
+        if player is None:
+            return
+
+        player_rect = getattr(
+            player,
+            "rect",
+            None
+        )
+
+        if player_rect is None:
+            return
+
+        player_center = pygame.Vector2(
+            player_rect.center
+        )
+
+        panel_center = pygame.Vector2(
+            self.rect.center
+        )
+
+        distance = (
+            player_center - panel_center
+        ).length()
+
+        # =================================================
+        # E - OTWARCIE PANELU
+        # =================================================
+
+        if not self.input_active:
+
+            if (
+                distance <= self.interaction_distance
+                and pygame.key.get_pressed()[pygame.K_e]
+            ):
+
+                self.input_active = True
+                self.entered_code = ""
+                self.message = ""
+
+    # =====================================================
+    # HANDLE EVENT
+    # =====================================================
+
+    def handle_event(
+        self,
+        event
+    ):
+
+        if not self.input_active:
+            return
+
+        if event.type != pygame.KEYDOWN:
+            return
+
+        # =================================================
+        # ENTER
+        # =================================================
+
+        if event.key == pygame.K_RETURN:
+
+            if self.entered_code == self.code:
+
+                self.triggered = True
+                self.is_unlocked = True
+                self.input_active = False
+
+                self.message = (
+                    "POPRAWNY KOD!"
+                )
+
+                print(
+                    "🔓 CodePanel: poprawny kod!"
+                )
+
+            else:
+
+                self.entered_code = ""
+
+                self.message = (
+                    "BŁĘDNY KOD!"
+                )
+
+                print(
+                    "❌ CodePanel: błędny kod!"
+                )
+
+        # =================================================
+        # BACKSPACE
+        # =================================================
+
+        elif event.key == pygame.K_BACKSPACE:
+
+            self.entered_code = (
+                self.entered_code[:-1]
+            )
+
+        # =================================================
+        # ESC
+        # =================================================
+
+        elif event.key == pygame.K_ESCAPE:
+
+            self.input_active = False
+            self.entered_code = ""
+            self.message = ""
+
+        # =================================================
+        # CYFRY
+        # =================================================
+
+        elif event.unicode.isdigit():
+
+            if len(self.entered_code) < 10:
+
+                self.entered_code += (
+                    event.unicode
+                )
+
+    # =====================================================
+    # DRAW
+    # =====================================================
+
+    def draw(
+        self,
+        surface
+    ):
+
+        # =================================================
+        # KOLOR PANELU
+        # =================================================
+
+        if self.is_unlocked:
+
+            color = (
+                46,
+                204,
+                113
+            )
+
+        else:
+
+            color = (
+                100,
+                100,
+                100
+            )
+
+        pygame.draw.rect(
+            surface,
+            color,
+            self.rect
+        )
+
+        pygame.draw.rect(
+            surface,
+            "black",
+            self.rect,
+            2
+        )
+
+        # =================================================
+        # E - INFORMACJA
+        # =================================================
+
+        if (
+            not self.input_active
+            and not self.is_unlocked
+        ):
+
+            font = pygame.font.Font(
+                None,
+                20
+            )
+
+            info = font.render(
+                "E - kod",
+                True,
+                "white"
+            )
+
+            info_rect = info.get_rect(
+                centerx=self.rect.centerx,
+                bottom=self.rect.top - 5
+            )
+
+            surface.blit(
+                info,
+                info_rect
+            )
+
+        # =================================================
+        # GUI KODU
+        # =================================================
+
+        if self.input_active:
+
+            font = pygame.font.Font(
+                None,
+                28
+            )
+
+            background = pygame.Rect(
+                self.rect.centerx - 120,
+                self.rect.centery - 50,
+                240,
+                100
+            )
+
+            pygame.draw.rect(
+                surface,
+                "black",
+                background
+            )
+
+            pygame.draw.rect(
+                surface,
+                "white",
+                background,
+                2
+            )
+
+            hidden_code = (
+                "*" * len(
+                    self.entered_code
+                )
+            )
+
+            text = font.render(
+                hidden_code,
+                True,
+                "white"
+            )
+
+            text_rect = text.get_rect(
+                center=background.center
+            )
+
+            surface.blit(
+                text,
+                text_rect
+            )
+
+            info = font.render(
+                "ENTER = zatwierdź",
+                True,
+                "white"
+            )
+
+            info_rect = info.get_rect(
+                centerx=background.centerx,
+                top=background.bottom + 5
+            )
+
+            surface.blit(
+                info,
+                info_rect
+            )
+
+        # =================================================
+        # KOMUNIKAT
+        # =================================================
+
+        if (
+            self.message
+            and not self.input_active
+        ):
+
+            font = pygame.font.Font(
+                None,
+                24
+            )
+
+            text = font.render(
+                self.message,
+                True,
+                "white"
+            )
+
+            text_rect = text.get_rect(
+                centerx=self.rect.centerx,
+                bottom=self.rect.top - 5
+            )
+
+            surface.blit(
+                text,
+                text_rect
+            )
 
 
 # =========================================================
@@ -419,8 +759,7 @@ class ScoringButton(Interactive):
 
         if (
             not self.used
-            and current_power
-            >= self.required_power
+            and current_power >= self.required_power
         ):
 
             if hasattr(
@@ -504,6 +843,15 @@ class Door(Interactive):
                     self.trigger_object.is_unlocked
                 )
 
+            elif hasattr(
+                self.trigger_object,
+                "triggered"
+            ):
+
+                self.is_open = (
+                    self.trigger_object.triggered
+                )
+
     def draw(
         self,
         surface
@@ -511,7 +859,9 @@ class Door(Interactive):
 
         if not self.is_open:
 
-            super().draw(surface)
+            super().draw(
+                surface
+            )
 
 
 # =========================================================
@@ -709,14 +1059,18 @@ class InteractiveManager:
 
         for obj in self.objects:
 
-            obj.handle_event(event)
+            obj.handle_event(
+                event
+            )
 
     def handle_event_all(
         self,
         event
     ):
 
-        self.handle_event(event)
+        self.handle_event(
+            event
+        )
 
     # =====================================================
     # DRAW
@@ -729,11 +1083,15 @@ class InteractiveManager:
 
         for obj in self.objects:
 
-            obj.draw(surface)
+            obj.draw(
+                surface
+            )
 
     def draw_all(
         self,
         surface
     ):
 
-        self.draw(surface)
+        self.draw(
+            surface
+        )
