@@ -39,10 +39,11 @@ class GameAudio:
         # =================================================
         # MIXER
         # =================================================
-
-        if not pygame.mixer.get_init():
-            pygame.mixer.init()
-
+        try:
+            if not pygame.mixer.get_init():
+                pygame.mixer.init()
+        except pygame.error:
+            pass
         # =================================================
         # DŹWIĘKI
         # =================================================

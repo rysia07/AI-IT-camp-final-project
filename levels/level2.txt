@@ -15,3 +15,4 @@ scoringbutton 808 355 0 new_button
 scoringbutton 44 274 0 new_button
 lever 363 130 100 20 left lever1
 door 714 7 30 120 lever1 door1
+platform 0 570 900 30 new_platform
