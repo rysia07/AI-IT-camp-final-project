@@ -1127,18 +1127,19 @@ class CharacterManager:
 # =========================================================
 # PROJECTILE
 # =========================================================
+
 class Projectile:
 
     def __init__(
-            self,
-            x,
-            y,
-            vx,
-            vy,
-            damage=10,
-            color="yellow",
-            lifetime=5.0,
-            owner=None
+        self,
+        x,
+        y,
+        vx,
+        vy,
+        damage=10,
+        color="yellow",
+        lifetime=5.0,
+        owner=None
     ):
 
         self.pos = pygame.Vector2(
@@ -1172,6 +1173,58 @@ class Projectile:
         self.rect.center = (
             int(self.pos.x),
             int(self.pos.y)
+        )
+
+    # =====================================================
+    # UPDATE
+    # =====================================================
+
+    def update(
+        self,
+        dt
+    ):
+
+        self.age += dt
+
+        self.pos += self.vel * dt
+
+        self.rect.center = (
+            int(self.pos.x),
+            int(self.pos.y)
+        )
+
+        if self.age >= self.lifetime:
+
+            self.is_dead = True
+
+    # =====================================================
+    # ALIVE
+    # =====================================================
+
+    def is_alive(self):
+
+        return (
+            not self.is_dead
+            and self.age < self.lifetime
+        )
+
+    # =====================================================
+    # DRAW
+    # =====================================================
+
+    def draw(
+        self,
+        surface
+    ):
+
+        pygame.draw.circle(
+            surface,
+            self.color,
+            (
+                int(self.pos.x),
+                int(self.pos.y)
+            ),
+            self.radius
         )
 
 
