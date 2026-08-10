@@ -5,18 +5,21 @@
 p 40 501
 
 platform 0 570 150 30 new_platform
-platform 52 52 150 30 new_platform
-door 266 3 30 200 button1 new_door
-platform 144 124 150 30 new_platform
-door 53 84 30 120 button1 new_door
-platform 51 204 250 30 new_platform
-lever 154 171 100 20 right lev1
+platform 50 53 150 30 new_platform
+platform 150 124 150 30 new_platform
+platform 50 204 250 30 new_platform
+lever 125 170 100 20 right lev1
 lever 451 35 100 20 left lev2
-platform 252 470 150 30 new_platform
-door 370 349 30 120 lev1 new_door
-scoringbutton 0 316 0 new_button
-platform 0 333 150 30 new_platform
-door 250 352 30 120 lev1 new_door
+platform 250 470 150 30 new_platform
+door 370 350 30 120 lev1 new_door
+scoringbutton 736 472 0 new_button
+platform 55 320 225 30 new_platform
+door 250 350 30 120 lev1 lev1
 door 406 5 30 120 lev1 new_door
 platform 406 125 250 30 new_platform
-door 624 5 30 120 button1 new_door
+door 624 5 30 120 null new_door
+lever 0 580 1 20 left null
+codepanel 112 266 1234 code1
+wall 50 55 30 150 new_wall
+wall 270 126 30 100 new_wall
+door 271 4 30 120 code1 new_door
