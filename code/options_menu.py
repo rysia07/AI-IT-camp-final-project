@@ -1,108 +1,146 @@
-import pygame
+class OptionsMenu(BaseMenu):
 
-class Button:
-    def __init__(self, x, y, width, height, text, color=(100, 150, 255), text_color=(255, 255, 255)):
-        self.rect = pygame.Rect(x, y, width, height)
-        self.text = text
-        self.color = color
-        self.text_color = text_color
-        self.hovered = False
-        self.active_color = (150, 200, 255)
-        self.idle_color = color
+    def __init__(self, width, height, audio_manager=None):
 
-    def draw(self, surface, font):
-        current_color = self.active_color if self.hovered else self.idle_color
-        pygame.draw.rect(surface, current_color, self.rect)
-        pygame.draw.rect(surface, (200, 200, 200), self.rect, 2)
+        super().__init__(
+            width,
+            height,
+            "OPCJE"
+        )
 
-        text_surface = font.render(self.text, True, self.text_color)
-        text_rect = text_surface.get_rect(center=self.rect.center)
-        surface.blit(text_surface, text_rect)
+        self.audio_manager = audio_manager
 
-    def update(self, mouse_pos):
-        self.hovered = self.rect.collidepoint(mouse_pos)
+        btn_w, btn_h = 200, 50
+        center_x = width // 2 - btn_w // 2
 
-    def is_clicked(self, mouse_pos, mouse_pressed):
-        return self.rect.collidepoint(mouse_pos) and mouse_pressed[0]
+        # =================================================
+        # VOLUME
+        # =================================================
 
+        slider_w = 300
+        slider_h = 16
 
-class OptionsMenu:
-    def __init__(self, width, height):
-        self.width = width
-        self.height = height
-        self.active = False
-        self.show_controls = False
-        self.volume = 100
+        slider_x = (
+            width // 2
+            - slider_w // 2
+        )
 
-        button_width = 220
-        button_height = 60
-        center_x = width // 2 - button_width // 2
+        self.volume_slider = Slider(
+            slider_x,
+            180,
+            slider_w,
+            slider_h,
+            min_val=0.0,
+            max_val=1.0,
+            initial_val=(
+                audio_manager.master_volume
+                if audio_manager is not None
+                else 0.7
+            )
+        )
 
-        self.volume_button = Button(center_x, height // 2 - 40, button_width, button_height, "VOLUME: 100")
-        self.controls_button = Button(center_x, height // 2 + 40, button_width, button_height, "CONTROLS")
-        self.back_button = Button(center_x, height // 2 + 130, button_width, button_height, "BACK")
-        self.buttons = [self.volume_button, self.controls_button, self.back_button]
+        # =================================================
+        # CONTROLS
+        # =================================================
 
-    def update(self, mouse_pos):
-        for button in self.buttons:
-            button.update(mouse_pos)
+        self.controls_info = [
+            "--- STEROWANIE ---",
+            "A / D  lub  Strzałki:  Ruch w lewo / prawo",
+            "W / Spacja:  Skok",
+            "S / Strzałka w dół:  Szybkie opadanie",
+            "Klawisz 2:  Atak postaci",
+            "Ruch myszą:  Ruch Duchem (Ghost)",
+            "ESC:  Pauza"
+        ]
 
-    def handle_input(self):
-        mouse_pos = pygame.mouse.get_pos()
-        mouse_pressed = pygame.mouse.get_pressed()
+        # =================================================
+        # BUTTONS
+        # =================================================
 
-        for button in self.buttons:
-            button.update(mouse_pos)
-            if button.is_clicked(mouse_pos, mouse_pressed):
-                if button == self.volume_button:
-                    self.volume = 100 if self.volume == 0 else 0
-                    self.volume_button.text = f"VOLUME: {self.volume}"
-                    return "volume"
-                elif button == self.controls_button:
-                    self.show_controls = not self.show_controls
-                    return "controls"
-                elif button == self.back_button:
-                    self.active = False
-                    self.show_controls = False
-                    return "back"
+        self.buttons = [
+            Button(
+                center_x,
+                480,
+                btn_w,
+                btn_h,
+                "Powrót",
+                "back"
+            )
+        ]
 
-        return None
+    # =====================================================
+    # EVENTS
+    # =====================================================
+
+    def handle_event(self, event):
+
+        old_value = self.volume_slider.value
+
+        self.volume_slider.handle_event(
+            event
+        )
+
+        new_value = self.volume_slider.value
+
+        # =================================================
+        # ZMIANA GŁOŚNOŚCI
+        # =================================================
+
+        if (
+            new_value != old_value
+            and self.audio_manager is not None
+        ):
+
+            self.audio_manager.set_master_volume(
+                new_value
+            )
+
+    # =====================================================
+    # DRAW
+    # =====================================================
 
     def draw(self, surface):
-        if not self.active:
-            return
 
-        surface.fill((30, 30, 30))
+        super().draw(
+            surface
+        )
 
-        font_large = pygame.font.Font(None, 70)
-        title = font_large.render("OPTIONS", True, (255, 255, 255))
-        title_rect = title.get_rect(center=(self.width // 2, self.height // 4))
-        surface.blit(title, title_rect)
+        self.volume_slider.draw(
+            surface,
+            self.btn_font,
+            "Głośność"
+        )
 
-        font_button = pygame.font.Font(None, 38)
-        for button in self.buttons:
-            button.draw(surface, font_button)
+        # =================================================
+        # CONTROLS
+        # =================================================
 
-        if self.show_controls:
-            panel = pygame.Surface((520, 220))
-            panel.fill((50, 70, 90))
-            panel.set_alpha(230)
-            surface.blit(panel, (190, 230))
+        start_y = 240
 
-            font_title = pygame.font.Font(None, 40)
-            title = font_title.render("Controls", True, (255, 255, 255))
-            surface.blit(title, (330, 245))
+        for i, line in enumerate(
+            self.controls_info
+        ):
 
-            font_text = pygame.font.Font(None, 32)
-            lines = [
-                "A / D  - Move",
-                "W      - Jump",
-                "S      - Fast Fall",
-                "2      - Attack",
-                "ESC    - Pause / Menu"
-            ]
-            y = 285
-            for line in lines:
-                text = font_text.render(line, True, (240, 240, 240))
-                surface.blit(text, (240, y))
-                y += 32
+            color = (
+                (255, 215, 0)
+                if i == 0
+                else (220, 220, 220)
+            )
+
+            txt_surf = self.info_font.render(
+                line,
+                True,
+                color
+            )
+
+            txt_rect = txt_surf.get_rect(
+                center=(
+                    self.width // 2,
+                    start_y + i * 28
+                )
+            )
+
+            surface.blit(
+                txt_surf,
+                txt_rect
+            )

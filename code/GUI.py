@@ -160,16 +160,68 @@ class LevelSelectMenu(BaseMenu):
             Button(center_x, start_y + len(level_list) * spacing + 20, btn_w, btn_h, "Powrót", "back")
         )
 
-
 class OptionsMenu(BaseMenu):
-    def __init__(self, width, height):
-        super().__init__(width, height, "OPCJE")
+
+    def __init__(self, width, height, audio_manager=None):
+
+        super().__init__(
+            width,
+            height,
+            "OPCJE"
+        )
+
+        self.audio_manager = audio_manager
+
         btn_w, btn_h = 200, 50
         center_x = width // 2 - btn_w // 2
 
-        slider_w, slider_h = 300, 16
+        # =================================================
+        # MUSIC SLIDER
+        # =================================================
+
+        slider_w = 300
+        slider_h = 16
         slider_x = width // 2 - slider_w // 2
-        self.volume_slider = Slider(slider_x, 180, slider_w, slider_h, initial_val=0.7)
+
+        music_value = (
+            audio_manager.music_volume
+            if audio_manager is not None
+            else 1.0
+        )
+
+        self.music_slider = Slider(
+            slider_x,
+            170,
+            slider_w,
+            slider_h,
+            min_val=0.0,
+            max_val=1.0,
+            initial_val=music_value
+        )
+
+        # =================================================
+        # SFX SLIDER
+        # =================================================
+
+        sfx_value = (
+            audio_manager.sfx_volume
+            if audio_manager is not None
+            else 1.0
+        )
+
+        self.sfx_slider = Slider(
+            slider_x,
+            250,
+            slider_w,
+            slider_h,
+            min_val=0.0,
+            max_val=1.0,
+            initial_val=sfx_value
+        )
+
+        # =================================================
+        # CONTROLS
+        # =================================================
 
         self.controls_info = [
             "--- STEROWANIE ---",
@@ -181,28 +233,139 @@ class OptionsMenu(BaseMenu):
             "ESC:  Pauza"
         ]
 
+        # =================================================
+        # BACK BUTTON
+        # =================================================
+
         self.buttons = [
-            Button(center_x, 480, btn_w, btn_h, "Powrót", "back")
+            Button(
+                center_x,
+                500,
+                btn_w,
+                btn_h,
+                "Powrót",
+                "back"
+            )
         ]
 
+    # =====================================================
+    # EVENTS
+    # =====================================================
+
     def handle_event(self, event):
-        self.volume_slider.handle_event(event)
+
+        old_music = self.music_slider.value
+        old_sfx = self.sfx_slider.value
+
+        # -------------------------------------------------
+        # MUSIC
+        # -------------------------------------------------
+
+        self.music_slider.handle_event(
+            event
+        )
+
+        # -------------------------------------------------
+        # SFX
+        # -------------------------------------------------
+
+        self.sfx_slider.handle_event(
+            event
+        )
+
+        # -------------------------------------------------
+        # UPDATE AUDIO
+        # -------------------------------------------------
+
+        if self.audio_manager is not None:
+
+            if self.music_slider.value != old_music:
+
+                self.audio_manager.set_music_volume(
+                    self.music_slider.value
+                )
+
+            if self.sfx_slider.value != old_sfx:
+
+                self.audio_manager.set_sfx_volume(
+                    self.sfx_slider.value
+                )
+
+    # =====================================================
+    # DRAW
+    # =====================================================
 
     def draw(self, surface):
-        super().draw(surface)
-        self.volume_slider.draw(surface, self.btn_font)
 
-        start_y = 240
-        for i, line in enumerate(self.controls_info):
-            color = (255, 215, 0) if i == 0 else (220, 220, 220)
-            txt_surf = self.info_font.render(line, True, color)
-            txt_rect = txt_surf.get_rect(center=(self.width // 2, start_y + i * 28))
-            surface.blit(txt_surf, txt_rect)
+        super().draw(
+            surface
+        )
 
+        # -------------------------------------------------
+        # MUSIC
+        # -------------------------------------------------
+
+        self.music_slider.draw(
+            surface,
+            self.btn_font,
+            "Muzyka"
+        )
+
+        # -------------------------------------------------
+        # SFX
+        # -------------------------------------------------
+
+        self.sfx_slider.draw(
+            surface,
+            self.btn_font,
+            "Efekty dźwiękowe"
+        )
+
+        # -------------------------------------------------
+        # CONTROLS
+        # -------------------------------------------------
+
+        start_y = 320
+
+        for i, line in enumerate(
+            self.controls_info
+        ):
+
+            color = (
+                (255, 215, 0)
+                if i == 0
+                else (220, 220, 220)
+            )
+
+            txt_surf = self.info_font.render(
+                line,
+                True,
+                color
+            )
+
+            txt_rect = txt_surf.get_rect(
+                center=(
+                    self.width // 2,
+                    start_y + i * 28
+                )
+            )
+
+            surface.blit(
+                txt_surf,
+                txt_rect
+            )
 
 class CreditsMenu(BaseMenu):
-    def __init__(self, width, height):
-        super().__init__(width, height, "AKTORZÓY")
+
+    def __init__(self, width, height, audio_manager=None):
+
+        super().__init__(
+            width,
+            height,
+            "AKTORZÓY"
+        )
+
+        self.audio_manager = audio_manager
         btn_w, btn_h = 200, 50
         center_x = width // 2 - btn_w // 2
 
