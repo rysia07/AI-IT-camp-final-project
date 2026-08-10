@@ -3,14 +3,21 @@ import pygame
 
 class GameInput:
 
-    def __init__(self, game):
+    def __init__(
+        self,
+        game
+    ):
+
         self.game = game
 
     # =====================================================
     # KEYBOARD
     # =====================================================
 
-    def handle_keydown(self, event):
+    def handle_keydown(
+        self,
+        event
+    ):
 
         game = self.game
 
@@ -20,14 +27,12 @@ class GameInput:
 
         if event.key == pygame.K_ESCAPE:
 
-            # PLAYING -> PAUSE
             if game.state.is_playing():
 
                 game.state.pause()
 
                 return
 
-            # PAUSE -> PLAYING
             elif game.state.is_pause():
 
                 game.state.resume()
@@ -39,6 +44,7 @@ class GameInput:
         # -------------------------------------------------
 
         if not game.state.is_playing():
+
             return
 
         # -------------------------------------------------
@@ -77,11 +83,15 @@ class GameInput:
     # MOUSE MOTION
     # =====================================================
 
-    def handle_mouse_motion(self, event):
+    def handle_mouse_motion(
+        self,
+        event
+    ):
 
         game = self.game
 
         if not game.state.is_playing():
+
             return
 
         dx, dy = event.rel
@@ -93,7 +103,10 @@ class GameInput:
     # LEFT CLICK
     # =====================================================
 
-    def handle_left_click(self, event):
+    def handle_left_click(
+        self,
+        event
+    ):
 
         game = self.game
 
@@ -102,12 +115,6 @@ class GameInput:
         # =================================================
 
         if game.state.is_playing():
-
-            if game.interactive_mgr is not None:
-
-                game.interactive_mgr.handle_event_all(
-                    event
-                )
 
             return
 
@@ -167,7 +174,9 @@ class GameInput:
 
             if action == "back":
 
-                previous = game.state.previous
+                previous = (
+                    game.state.previous
+                )
 
                 game.state.set_direct(
                     previous
@@ -192,10 +201,12 @@ class GameInput:
                 and action.startswith("load_")
             ):
 
-                level_file = action.replace(
-                    "load_",
-                    "",
-                    1
+                level_file = (
+                    action.replace(
+                        "load_",
+                        "",
+                        1
+                    )
                 )
 
                 game.current_level_file = (
@@ -282,7 +293,9 @@ class GameInput:
 
             if action == "back":
 
-                previous = game.state.previous
+                previous = (
+                    game.state.previous
+                )
 
                 game.state.set_direct(
                     previous
@@ -387,7 +400,9 @@ class GameInput:
     # EVENTS
     # =====================================================
 
-    def handle_events(self):
+    def handle_events(
+        self
+    ):
 
         game = self.game
 
@@ -401,16 +416,37 @@ class GameInput:
         # -------------------------------------------------
         # EVENT LOOP
         # -------------------------------------------------
+
         for event in pygame.event.get():
 
+            # =================================================
+            # QUIT
+            # =================================================
+
             if event.type == pygame.QUIT:
-                running = False
 
-            game.interactive_mgr.handle_event_all(event)
+                game.running = False
 
-            # ---------------------------------------------
+                continue
+
+            # =================================================
+            # INTERACTIVE OBJECTS
+            #
+            # KAŻDY EVENT JEST PRZEKAZANY TYLKO RAZ.
+            # =================================================
+
+            if (
+                game.state.is_playing()
+                and game.interactive_mgr is not None
+            ):
+
+                game.interactive_mgr.handle_event(
+                    event
+                )
+
+            # =================================================
             # OPTIONS EVENTS
-            # ---------------------------------------------
+            # =================================================
 
             if game.state.is_options():
 
@@ -423,9 +459,9 @@ class GameInput:
                         event
                     )
 
-            # ---------------------------------------------
+            # =================================================
             # KEYBOARD
-            # ---------------------------------------------
+            # =================================================
 
             if event.type == pygame.KEYDOWN:
 
@@ -433,9 +469,9 @@ class GameInput:
                     event
                 )
 
-            # ---------------------------------------------
+            # =================================================
             # MOUSE MOTION
-            # ---------------------------------------------
+            # =================================================
 
             elif event.type == pygame.MOUSEMOTION:
 
@@ -443,9 +479,9 @@ class GameInput:
                     event
                 )
 
-            # ---------------------------------------------
+            # =================================================
             # LEFT CLICK
-            # ---------------------------------------------
+            # =================================================
 
             elif (
                 event.type == pygame.MOUSEBUTTONDOWN
@@ -455,15 +491,3 @@ class GameInput:
                 self.handle_left_click(
                     event
                 )
-
-            # ---------------------------------------------
-            # INTERACTIVE OBJECTS
-            # ---------------------------------------------
-
-            if game.state.is_playing():
-
-                if game.interactive_mgr is not None:
-
-                    game.interactive_mgr.handle_event(
-                        event
-                    )
