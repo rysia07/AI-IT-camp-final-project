@@ -417,7 +417,7 @@ class Game:
 
             self.update(dt)
 
-            self.renderer.draw()
+            self.renderer.draw(screen)
 
         self.shutdown()
 

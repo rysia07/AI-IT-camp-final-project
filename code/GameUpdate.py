@@ -203,6 +203,31 @@ class GameUpdate:
             game.player.rect.centery
         )
 
+    # =================================================
+    # SPRAWDZANIE CZY GRACZ JEST POZA EKRANEM
+    # =================================================
+    def check_player_out_of_bounds(self):
+        # tymaszem
+        game = self.game
+
+        print(
+            "PLAYER:",
+            game.player.rect,
+            "SCREEN:",
+            game.width,
+            game.height
+        )
+        # tymczasem end
+        if (
+                game.player.rect.left < 0
+                or game.player.rect.right > game.width
+                or game.player.rect.top < 0
+                or game.player.rect.bottom > game.height
+        ):
+            print("⚠️ GRACZ POZA EKRANEM!")
+
+            game.player.hp = 0
+
     # =====================================================
     # GHOST
     # =====================================================
@@ -320,10 +345,9 @@ class GameUpdate:
     # =====================================================
     # GAMEPLAY UPDATE
     # =====================================================
-
     def update_game(
-        self,
-        dt
+            self,
+            dt
     ):
 
         game = self.game
@@ -335,9 +359,12 @@ class GameUpdate:
             obstacles
         )
 
+        self.check_player_out_of_bounds()
+
         self.update_ghost(
             obstacles
         )
+
 
         self.update_enemies(
             dt
@@ -352,7 +379,6 @@ class GameUpdate:
         # -------------------------------------------------
 
         if game.player.hp <= 0:
-
             game.stop_game_mouse()
             game.set_state(game.FAILURE)
 

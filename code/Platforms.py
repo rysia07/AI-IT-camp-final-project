@@ -57,7 +57,6 @@ class PlatformManager:
             )
 
             self.platforms = [
-                self.floor,
                 pygame.Rect(300, 500, 200, 20),
                 pygame.Rect(600, 380, 200, 20),
                 pygame.Rect(900, 250, 200, 20)

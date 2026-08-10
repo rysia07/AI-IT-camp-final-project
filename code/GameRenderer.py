@@ -100,17 +100,42 @@ class GameRenderer:
     # GAME DRAW
     # =====================================================
 
-    def draw_game(self):
+    def draw_game(self, surface=None):
 
         game = self.game
 
-        # =================================================
-        # PLATFORMY
-        # =================================================
-
-        game.platform_mgr.draw(
-            self.screen
+        # PODŁOGA
+        texture = self.platform_textures.get(
+            id(self.floor)
         )
+
+        if texture:
+            surface.blit(
+                texture,
+                self.floor
+            )
+
+        # POZOSTAŁE PLATFORMY
+        for platform in self.platforms:
+
+            texture = self.platform_textures.get(
+                id(platform)
+            )
+
+            if texture:
+
+                surface.blit(
+                    texture,
+                    platform
+                )
+
+            else:
+
+                pygame.draw.rect(
+                    surface,
+                    (100, 100, 100),
+                    platform
+                )
 
         # =================================================
         # OBIEKTY INTERAKTYWNE
