@@ -138,9 +138,9 @@ class LevelSelectMenu(BaseMenu):
             level_list = [
                 "level1.txt",
                 "level2.txt",
+                "level6.txt",
                 "level3.txt",
-                "level4.txt",
-                "level5.txt"
+                "level4.txt"
             ]
 
         self.buttons = []
