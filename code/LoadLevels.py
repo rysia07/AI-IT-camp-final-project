@@ -5,6 +5,7 @@ from Characters import ShootingEnemy
 from Interactive import (
     Lever,
     ScoringButton,
+    CodePanel,
     Door,
     LevelGate,
     InteractiveManager
@@ -149,6 +150,39 @@ def load_level(filepath):
 
                         if len(parts) > 6:
                             level.objects[parts[6]] = lever
+                            
+                    # =================================================
+                    # CODE PANEL
+                    #
+                    # codepanel x y width height code [name]
+                    # =================================================
+
+                    elif object_type == "codepanel":
+
+                        if len(parts) < 6:
+                            print(
+                                f"❌ Line {line_number}: "
+                                "'codepanel' requires "
+                                "'x y width height code [name]'"
+                            )
+                            continue
+
+                        panel = CodePanel(
+                            float(parts[1]),
+                            float(parts[2]),
+                            float(parts[3]),
+                            float(parts[4]),
+                            code=parts[5]
+                        )
+
+                        level.interactive_manager.add(
+                            panel
+                        )
+
+                        if len(parts) > 6:
+                            level.objects[
+                                parts[6]
+                            ] = panel
 
                     # =================================================
                     # DOOR
