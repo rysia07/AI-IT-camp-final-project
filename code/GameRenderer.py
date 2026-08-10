@@ -99,7 +99,6 @@ class GameRenderer:
     # =====================================================
     # GAME DRAW
     # =====================================================
-
     def draw_game(self):
 
         game = self.game
@@ -134,20 +133,15 @@ class GameRenderer:
 
         for enemy in game.level.enemies:
 
-            # Wróg posiada is_alive()
-
             if hasattr(
-                enemy,
-                "is_alive"
+                    enemy,
+                    "is_alive"
             ):
 
                 if enemy.is_alive():
-
                     enemy.draw(
                         self.screen
                     )
-
-            # Wróg nie posiada is_alive()
 
             else:
 
@@ -174,14 +168,9 @@ class GameRenderer:
         # =================================================
 
         if game.current_state == 6:
-
             game.pause_menu.draw(
                 self.screen
             )
-
-    # =====================================================
-    # HUD
-    # =====================================================
 
     def draw_hud(self):
 

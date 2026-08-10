@@ -255,67 +255,88 @@ class GameLevel:
     # =====================================================
 
     def load_level(self, level_filename):
-        """
-        Przechodzi do następnego poziomu.
-
-        Zwraca:
-            True  - jeżeli istnieje następny poziom
-            False - jeżeli był to ostatni poziom
-        """
-
-        game = self.game
 
         try:
-            current_index = (
-                game.available_levels.index(
-                    game.current_level_file
-                )
+            level = load_level(
+                f"../levels/{level_filename}"
             )
 
-        except ValueError:
-
-            current_index = -1
-
-        # -------------------------------------------------
-        # NEXT LEVEL
-        # -------------------------------------------------
-
-        if (
-            current_index >= 0
-            and current_index + 1
-            < len(game.available_levels)
-        ):
-
-            next_level = (
-                game.available_levels[
-                    current_index + 1
-                ]
+        except FileNotFoundError:
+            level = load_level(
+                level_filename
             )
 
-            print(
-                f"➡️ Przejście: "
-                f"{game.current_level_file} "
-                f"-> "
-                f"{next_level}"
-            )
+        self.game.level = level
 
-            game.current_level_file = next_level
+        # =====================================================
+        # INTERACTIVE
+        # =====================================================
 
-            self.load(
-                game.current_level_file
-            )
-
-            return True
-
-        # -------------------------------------------------
-        # LAST LEVEL
-        # -------------------------------------------------
-
-        print(
-            "🏆 Ukończono wszystkie poziomy!"
+        self.game.interactive_mgr = (
+            level.interactive_manager
         )
 
-        return False
+        # =====================================================
+        # PLATFORMS
+        # =====================================================
+
+        self.game.platform_mgr = PlatformManager(
+            "../pictures/platform_left.png",
+            "../pictures/platform_middle.png",
+            "../pictures/platform_right.png",
+            level.platforms
+        )
+
+        # =====================================================
+        # PROJECTILES
+        # =====================================================
+
+        self.game.projectile_mgr = ProjectileManager()
+
+        # =====================================================
+        # PLAYER
+        # =====================================================
+
+        self.game.player = self.game.create_player(
+            level.player_pos
+        )
+
+        # =====================================================
+        # GHOST
+        # =====================================================
+
+        mouse_x, mouse_y = pygame.mouse.get_pos()
+
+        self.game.ghost = GhostMouse(
+            mouse_x,
+            mouse_y
+        )
+
+        self.game.ghost.update_rect()
+
+        self.game.ghost.last_pos = (
+            self.game.ghost.pos.copy()
+        )
+
+        # =====================================================
+        # CHARACTER MANAGER
+        # =====================================================
+
+        self.game.char_mgr = CharacterManager()
+
+        self.game.char_mgr.add(
+            "player",
+            self.game.player
+        )
+
+        self.game.char_mgr.add(
+            "ghost",
+            self.game.ghost
+        )
+
+        print(
+            f"✅ Załadowano poziom: {level_filename}"
+        )
 
     def check_gate(self):
 

@@ -203,6 +203,28 @@ class GameUpdate:
             game.player.rect.centery
         )
 
+    # =================================================
+    # SPRAWDZANIE CZY GRACZ JEST POZA EKRANEM
+    # =================================================
+    def check_player_out_of_bounds(self):
+        # tymaszem
+        game = self.game
+
+        print(
+            "PLAYER:",
+            game.player.rect,
+            "SCREEN:",
+            game.width,
+            game.height
+        )
+        # tymczasem end
+        if (
+            game.player.rect.bottom >= game.height
+        ):
+            print("⚠️ GRACZ POZA EKRANEM!")
+
+            game.player.hp = 0
+
     # =====================================================
     # GHOST
     # =====================================================
@@ -320,10 +342,9 @@ class GameUpdate:
     # =====================================================
     # GAMEPLAY UPDATE
     # =====================================================
-
     def update_game(
-        self,
-        dt
+            self,
+            dt
     ):
 
         game = self.game
@@ -335,9 +356,12 @@ class GameUpdate:
             obstacles
         )
 
+        self.check_player_out_of_bounds()
+
         self.update_ghost(
             obstacles
         )
+
 
         self.update_enemies(
             dt
@@ -352,7 +376,6 @@ class GameUpdate:
         # -------------------------------------------------
 
         if game.player.hp <= 0:
-
             game.stop_game_mouse()
             game.set_state(game.FAILURE)
 
@@ -371,7 +394,26 @@ class GameUpdate:
         # -------------------------------------------------
         # LEVEL GATE
         # -------------------------------------------------
+        # -------------------------------------------------
+        # SPRAWDZANIE WYJŚCIA POZA EKRAN
+        # -------------------------------------------------
 
+        if (
+                game.player.pos.y > game.height
+                or game.player.rect.top > game.height
+        ):
+            print(
+                "⚠️ GRACZ SPADŁ:",
+                game.player.pos,
+                game.player.rect
+            )
+
+            game.player.hp = 0
+
+            game.stop_game_mouse()
+            game.set_state(game.FAILURE)
+
+            return
         self.check_level_gate()
 
     # =====================================================
