@@ -59,6 +59,7 @@ class Game:
         self.screen = pygame.display.set_mode(
             (self.width, self.height)
         )
+
         self.audio_manager = GameAudio(self)
 
         self.jump_audio = self.audio_manager.jump_audio
@@ -104,6 +105,8 @@ class Game:
         self.current_level_file = (
             "level1.txt"
         )
+
+        self.final_score = 0
 
         # -------------------------------------------------
         # GAME OBJECTS
@@ -418,7 +421,7 @@ class Game:
 
             self.update(dt)
 
-            self.renderer.draw(screen)
+            self.renderer.draw()
 
         self.shutdown()
 

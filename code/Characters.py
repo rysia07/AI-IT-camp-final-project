@@ -335,6 +335,24 @@ class Creature(Character):
 
         return obj
 
+    def check_screen_bounds(self, width=900, height=600):
+
+        if (
+                self.rect.right <= 0
+                or self.rect.left >= width
+                or self.rect.bottom >= height
+                or self.rect.top <= 0
+        ):
+            print(
+                f"PLAYER OUT OF SCREEN: "
+                f"{self.rect} / SCREEN: {width}x{height}"
+            )
+
+            self.hp = 0
+            return False
+
+        return True
+
     # =========================================================
     # COLLISION X
     # =========================================================
@@ -353,6 +371,10 @@ class Creature(Character):
         self.pos.x += dx
 
         self.update_rect()
+        self.check_screen_bounds(
+            width=900,
+            height=600
+        )
 
         for platform in platforms:
 

@@ -219,10 +219,7 @@ class GameUpdate:
         )
         # tymczasem end
         if (
-                game.player.rect.left < 0
-                or game.player.rect.right > game.width
-                or game.player.rect.top < 0
-                or game.player.rect.bottom > game.height
+            game.player.rect.bottom >= game.height
         ):
             print("⚠️ GRACZ POZA EKRANEM!")
 
@@ -397,7 +394,26 @@ class GameUpdate:
         # -------------------------------------------------
         # LEVEL GATE
         # -------------------------------------------------
+        # -------------------------------------------------
+        # SPRAWDZANIE WYJŚCIA POZA EKRAN
+        # -------------------------------------------------
 
+        if (
+                game.player.pos.y > game.height
+                or game.player.rect.top > game.height
+        ):
+            print(
+                "⚠️ GRACZ SPADŁ:",
+                game.player.pos,
+                game.player.rect
+            )
+
+            game.player.hp = 0
+
+            game.stop_game_mouse()
+            game.set_state(game.FAILURE)
+
+            return
         self.check_level_gate()
 
     # =====================================================
