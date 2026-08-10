@@ -1,3 +1,4 @@
+import pygame
 class GameState:
     """
     Zarządza stanem gry.
@@ -103,15 +104,23 @@ class GameState:
     # =====================================================
     # GAMEPLAY
     # =====================================================
-
     def start_game(self):
-        """
-        Przechodzi do rozgrywki.
-        """
 
         self.set_direct(self.PLAYING)
 
         self.game.start_game_mouse()
+
+        if self.game.ghost is not None:
+            mouse_x, mouse_y = pygame.mouse.get_pos()
+
+            self.game.ghost.pos.x = float(mouse_x)
+            self.game.ghost.pos.y = float(mouse_y)
+
+            self.game.ghost.update_rect()
+
+            self.game.ghost.last_pos = (
+                self.game.ghost.pos.copy()
+            )
 
     # =====================================================
     # PAUSE

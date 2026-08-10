@@ -57,7 +57,6 @@ class Character:
         self.sprite = None
 
         if spritesheet_path:
-
             self.sprite = SpriteObject(
                 "character",
                 spritesheet_path,
@@ -96,7 +95,6 @@ class Character:
         if not self.sprite:
 
             if spritesheet_path:
-
                 self.sprite = SpriteObject(
                     "character",
                     spritesheet_path,
@@ -105,7 +103,6 @@ class Character:
                 )
 
             else:
-
                 raise ValueError(
                     "Brak spritesheet_path"
                 )
@@ -184,12 +181,15 @@ class Character:
         **kwargs
     ):
 
-        self.update_rect()
+        # UWAGA:
+        # Nie aktualizujemy tutaj rect.
+        #
+        # Creature robi to po zakończeniu
+        # całej fizyki i kolizji.
 
         if self.sprite:
 
             if self.sprite.is_finished():
-
                 self.current_priority = 0
 
             self.sprite.update(dt)
@@ -268,7 +268,8 @@ class Creature(Character):
 
         self.is_grounded = False
 
-        # jump_force jest ujemny, bo Y rośnie w dół
+        # jump_force jest ujemny,
+        # bo Y rośnie w dół
         self.jump_force = jump_force
 
         # =====================================================
@@ -380,16 +381,19 @@ class Creature(Character):
         platforms
     ):
 
-        # Zapamiętujemy poprzedni dół/górę.
-        # Dzięki temu łatwiej rozróżnić:
-        # - lądowanie
-        # - uderzenie głową
+        # Zapamiętujemy poprzedni rect.
         old_rect = self.rect.copy()
 
-        # Grawitacja
+        # =====================================================
+        # GRAWITACJA
+        # =====================================================
+
         self.vel_y += self.gravity * dt
 
-        # Ruch pionowy
+        # =====================================================
+        # RUCH PIONOWY
+        # =====================================================
+
         self.pos.y += self.vel_y * dt
 
         self.update_rect()
@@ -409,7 +413,6 @@ class Creature(Character):
 
             if self.vel_y >= 0:
 
-                # Sprawdzamy, czy wcześniej byliśmy nad platformą.
                 if old_rect.bottom <= platform_rect.top:
 
                     self.rect.bottom = platform_rect.top
@@ -441,7 +444,6 @@ class Creature(Character):
         self.is_grounded = landed
 
         if landed:
-
             self.jumps_left = self.max_jumps
 
     # =========================================================
@@ -452,11 +454,6 @@ class Creature(Character):
         self,
         platforms
     ):
-
-        # Mały prostokąt 1 px pod nogami.
-        #
-        # Dzięki temu is_grounded nie będzie
-        # przypadkowo przełączało się 0/1.
 
         ground_check = pygame.Rect(
             self.rect.left + 2,
@@ -471,8 +468,6 @@ class Creature(Character):
 
             if ground_check.colliderect(platform_rect):
 
-                # Tylko jeśli naprawdę jesteśmy na górze
-                # platformy.
                 if abs(
                     self.rect.bottom
                     - platform_rect.top
@@ -569,9 +564,11 @@ class Creature(Character):
                         self.rect.bottom
                         <= platform_rect.top + 3
                         and
-                        self.rect.right > platform_rect.left
+                        self.rect.right
+                        > platform_rect.left
                         and
-                        self.rect.left < platform_rect.right
+                        self.rect.left
+                        < platform_rect.right
                     ):
 
                         self.rect.bottom = platform_rect.top
@@ -579,6 +576,16 @@ class Creature(Character):
                         self.pos.y = self.rect.centery
 
                         break
+
+        # =====================================================
+        # FINALNA SYNCHRONIZACJA
+        # =====================================================
+        #
+        # Po wszystkich ruchach i kolizjach
+        # rect musi odpowiadać dokładnie self.pos.
+        #
+
+        self.update_rect()
 
         # =====================================================
         # SPRITE
@@ -618,7 +625,6 @@ class GhostMouse(Character):
     ):
 
         # Duch jest sterowany przez main.py.
-        #
         # Nie zmieniamy tutaj jego pozycji.
 
         self.update_rect()
@@ -927,6 +933,12 @@ class ShootingEnemy(Character):
                     reset=False
                 )
 
+        # =====================================================
+        # FINALNA SYNCHRONIZACJA
+        # =====================================================
+
+        self.update_rect()
+
         super().update(dt)
 
 
@@ -954,7 +966,6 @@ class CharacterManager:
     ):
 
         if name in self.characters:
-
             del self.characters[name]
 
     def get(
@@ -1163,7 +1174,6 @@ class ProjectileManager:
     ):
 
         if projectile:
-
             self.projectiles.append(
                 projectile
             )

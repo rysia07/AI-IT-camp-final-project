@@ -15,7 +15,6 @@ class GameRenderer:
 
         game = self.game
 
-        print("[RENDER] STATE =", game.current_state)
 
         self.screen.fill((30, 30, 40))
     # =====================================================

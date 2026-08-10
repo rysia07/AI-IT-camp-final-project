@@ -1,3 +1,4 @@
+import pygame
 from LoadLevels import load_level
 from Platforms import PlatformManager
 
@@ -325,7 +326,7 @@ class GameLevel:
             if not getattr(obj, "triggered", False):
                 continue
 
-            if self.load_next_level():
+            if self.load_level(game.current_level_file):
 
                 obj.triggered = False
 
@@ -399,9 +400,11 @@ class GameLevel:
         # GHOST
         # -------------------------------------------------
 
+        mouse_x, mouse_y = pygame.mouse.get_pos()
+
         self.game.ghost = GhostMouse(
-            level.player_pos[0],
-            level.player_pos[1]
+            mouse_x,
+            mouse_y
         )
 
         self.game.ghost.update_rect()
