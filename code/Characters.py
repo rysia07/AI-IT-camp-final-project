@@ -1247,7 +1247,7 @@ class ProjectileManager:
 
         for projectile in self.projectiles[:]:
 
-            projectile.update()
+            projectile.update(dt)
 
             # =============================================
             # POCISK JUŻ NIE ŻYJE
